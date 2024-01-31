@@ -6,6 +6,7 @@
 
 #include "level/levelrenderer.h"
 #include "level/level.h"
+#include "player.h"
 
 GLFWwindow* window;
 
@@ -15,7 +16,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-int init(Level* level, LevelRenderer* levelRenderer) {
+int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     int width = 1024;
     int height = 768;
 
@@ -67,10 +68,12 @@ int init(Level* level, LevelRenderer* levelRenderer) {
     glfwSetKeyCallback(window, keyCallback);
 
     // Initialize Level
-    Level_init(level, 256, 64, 256);
+    Level_init(level, 256, 256, 64);
 
     // Initialize LevelRenderer
     LevelRenderer_init(levelRenderer, level);
+
+    Player_init(player, level);
 
     return 1; // Return 1 on success
 }
@@ -84,15 +87,39 @@ void destroy(Level* level) {
     glfwTerminate();
 }
 
-void render(Level level, LevelRenderer levelRenderer) {
+void moveCameraToPlayer(Player* player) {
+    printf("Player Position: (%.2f, %.2f, %.2f)\n", player->x, player->y, player->z);
+    printf("Mouse Look: (xRotation=%.2f, yRotation=%.2f)\n", player->xRotation, player->yRotation);
+
+    // Eye height
+    glTranslatef(0.0f, 0.0f, -0.3f);
+
+    // Rotate camera
+    glRotatef(player->xRotation, 1.0f, 0.0f, 0.0f);
+    glRotatef(player->yRotation, 0.0f, 1.0f, 0.0f);
+
+    // Move camera to player's location
+    glTranslatef(-player->x, -player->y, -player->z);
+}
+
+void render(Level level, LevelRenderer levelRenderer, Player player) {
+    // Get mouse motion
+    double motionX, motionY;
+    glfwGetCursorPos(window, &motionX, &motionY);
+    motionX *= 0.1;  // Adjust sensitivity
+    motionY *= 0.1;
+
+    // Rotate the camera using the mouse motion input
+    Player_turn(&player, motionX, motionY);
+
     // Clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Reset camera
     glLoadIdentity();
 
-    // Move camera to middle of level
-    glTranslated(-level.width / 2.0, -level.depth / 2.0 - 3.0, -level.height / 2.0);
+    // Move camera to player's position
+    moveCameraToPlayer(&player);
 
     // Render level chunks
     LevelRenderer_render(&levelRenderer);
@@ -101,9 +128,9 @@ void render(Level level, LevelRenderer levelRenderer) {
     glfwSwapBuffers(window);
 }
 
-void run(Level* level, LevelRenderer* levelRenderer) {
+void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
     // Initialize the game
-    if (!init(level, levelRenderer)) {
+    if (!init(level, levelRenderer, player)) {
         fprintf(stderr, "Failed to initialize RubyDung\n");
         destroy(level);
         exit(EXIT_FAILURE);
@@ -115,7 +142,7 @@ void run(Level* level, LevelRenderer* levelRenderer) {
         glfwPollEvents();
 
         // Render the game
-        render(*level, *levelRenderer);
+        render(*level, *levelRenderer, *player);
 
         // Update the display
         glfwSwapBuffers(window);
@@ -125,12 +152,14 @@ void run(Level* level, LevelRenderer* levelRenderer) {
     destroy(level);
 }
 
+// TODO: FPS IS LOW AS FUCK
 int main(void) {
     Level level;
     LevelRenderer levelRenderer;
+    Player player;
 
     // Run the game
-    run(&level, &levelRenderer);
+    run(&level, &levelRenderer, &player);
 
     return EXIT_SUCCESS;
 }

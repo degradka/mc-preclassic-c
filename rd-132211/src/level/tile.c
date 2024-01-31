@@ -1,6 +1,7 @@
 #include "tile.h"
 
-Tile rock = { };
+Tile grass = { 0 };
+Tile rock = { 1 };
 
 void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int x, int y, int z) {
     float minX = x + 0.0F;

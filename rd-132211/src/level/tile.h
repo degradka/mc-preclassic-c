@@ -5,9 +5,10 @@
 #include "tessellator.h"
 
 typedef struct {
-    // Any specific properties of Tile can be added here
+    int textureId;
 } Tile;
 
+extern Tile grass;
 extern Tile rock;
 
 void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int x, int y, int z);
