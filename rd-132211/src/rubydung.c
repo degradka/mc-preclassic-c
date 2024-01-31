@@ -4,22 +4,25 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include "level/levelrenderer.h"
+#include "level/level.h"
+
 GLFWwindow* window;
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 }
 
-void init() {
+int init(Level* level, LevelRenderer* levelRenderer) {
     int width = 1024;
     int height = 768;
 
     // Initialize GLFW
     if (!glfwInit()) {
         fprintf(stderr, "Failed to initialize GLFW\n");
-        exit(EXIT_FAILURE);
+        return 0; // Return 0 on failure
     }
 
     // Set GLFW window hints
@@ -30,7 +33,8 @@ void init() {
     window = glfwCreateWindow(width, height, "RubyDung", NULL, NULL);
     if (!window) {
         glfwTerminate();
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Failed to create GLFW window\n");
+        return 0; // Return 0 on failure
     }
 
     // Make the window's context current
@@ -61,38 +65,72 @@ void init() {
 
     // Set the key callback function
     glfwSetKeyCallback(window, keyCallback);
+
+    // Initialize Level
+    Level_init(level, 256, 64, 256);
+
+    // Initialize LevelRenderer
+    LevelRenderer_init(levelRenderer, level);
+
+    return 1; // Return 1 on success
 }
 
-void destroy() {
+void destroy(Level* level) {
+    // Destroy Level
+    Level_destroy(level);
+
     // Terminate GLFW
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-int main(void) {
-    // Initialize GLFW
-    if (!glfwInit()) {
-        fprintf(stderr, "Failed to initialize GLFW\n");
-        return EXIT_FAILURE;
+void render(Level level, LevelRenderer levelRenderer) {
+    // Clear color and depth buffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Reset camera
+    glLoadIdentity();
+
+    // Move camera to middle of level
+    glTranslated(-level.width / 2.0, -level.depth / 2.0 - 3.0, -level.height / 2.0);
+
+    // Render level chunks
+    LevelRenderer_render(&levelRenderer);
+
+    // Update the display
+    glfwSwapBuffers(window);
+}
+
+void run(Level* level, LevelRenderer* levelRenderer) {
+    // Initialize the game
+    if (!init(level, levelRenderer)) {
+        fprintf(stderr, "Failed to initialize RubyDung\n");
+        destroy(level);
+        exit(EXIT_FAILURE);
     }
 
-    // Initialize the game
-    init();
-
-    // Loop until the user closes the window
+    // Start the game loop
     while (!glfwWindowShouldClose(window)) {
-        // Render here
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        // Framerate limit
+        glfwPollEvents();
+
+        // Render the game
+        render(*level, *levelRenderer);
 
         // Update the display
         glfwSwapBuffers(window);
-
-        // Poll for and process events
-        glfwPollEvents();
     }
 
     // Destroy I/O and save game
-    destroy();
+    destroy(level);
+}
+
+int main(void) {
+    Level level;
+    LevelRenderer levelRenderer;
+
+    // Run the game
+    run(&level, &levelRenderer);
 
     return EXIT_SUCCESS;
 }

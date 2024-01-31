@@ -2,12 +2,16 @@ CC = gcc
 CFLAGS = -Wall -g -I/usr/local/include
 LDFLAGS = -lglfw -lGLEW -lGL -lGLU
 
-SRC = main.c
+SRC = rubydung.c level/chunk.c level/level.c level/levelrenderer.c level/tessellator.c level/tile.c
+OBJ = $(SRC:.c=.o)
 
 all: rubydung
 
-rubydung: $(SRC)
+rubydung: $(OBJ)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
 clean:
-	rm -f rubydung
+	rm -f rubydung $(OBJ)
