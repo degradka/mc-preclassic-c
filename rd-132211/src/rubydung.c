@@ -59,9 +59,6 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     // Make the window's context current
     glfwMakeContextCurrent(window);
 
-    // Enable VSync
-    glfwSwapInterval(1);
-
     // Enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -107,8 +104,8 @@ void destroy(Level* level) {
 
 void moveCameraToPlayer(Player* player) {
     // Debug
-    printf("Player Position: (%.2f, %.2f, %.2f)\n", player->x, player->y, player->z);
-    printf("Mouse Look: (xRotation=%.2f, yRotation=%.2f)\n", player->xRotation, player->yRotation);
+    //printf("Debug: Player Position: (%.2f, %.2f, %.2f)\n", player->x, player->y, player->z);
+    //printf("Debug: Mouse Look: (xRotation=%.2f, yRotation=%.2f)\n", player->xRotation, player->yRotation);
 
     // Eye height
     glTranslatef(0.0f, 0.0f, -0.3f);
@@ -158,8 +155,10 @@ void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow
     // Enable fog to render shadow
     glEnable(GL_FOG);
 
+    // Render dark tiles in shadow
     LevelRenderer_render(&levelRenderer, 1);
 
+    // Finish rendering
     glDisable(GL_TEXTURE_2D);
 
     // Update the display
@@ -173,6 +172,9 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
         destroy(level);
         exit(EXIT_FAILURE);
     }
+
+    int frames = 0;
+    long long lastTime = currentTimeMillis();
 
     // Start the game loop
     while (!glfwWindowShouldClose(window)) {
@@ -189,6 +191,15 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
 
         // Render the game
         render(*level, *levelRenderer, player, window);
+
+        frames++;
+
+        while (currentTimeMillis() >= lastTime + 1000LL) {
+            printf("%d fps\n", frames);
+
+            lastTime += 1000LL;
+            frames = 0;
+        }
 
         // Update the display
         glfwSwapBuffers(window);

@@ -13,5 +13,7 @@ typedef struct {
 
 void Timer_init(Timer* timer, float ticksPerSecond);
 void Timer_advanceTime(Timer* timer);
+long long currentTimeMillis();
+long long getCurrentTimeInNanoseconds();
 
 #endif /* TIMER_H */

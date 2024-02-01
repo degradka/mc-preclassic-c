@@ -58,6 +58,7 @@ void Level_init(Level* level, int width, int height, int depth) {
                 int offsetY = rand() % (radius * 2) - radius;
                 int offsetZ = rand() % (radius * 2) - radius;
 
+                // Sphere shape
                 double distance = pow(offsetX, 2) + pow(offsetY, 2) + pow(offsetZ, 2);
                 if (distance > radius * radius) {
                     continue;
