@@ -7,8 +7,12 @@
 #include "level/levelrenderer.h"
 #include "level/level.h"
 #include "player.h"
+#include "timer.h"
 
 GLFWwindow* window;
+Timer timer;
+
+void tick(Player* player, GLFWwindow* window);
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
@@ -74,6 +78,9 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     LevelRenderer_init(levelRenderer, level);
 
     Player_init(player, level);
+
+    // Initialize the timer
+    Timer_init(&timer, 20.0);
 
     return 1; // Return 1 on success
 }
@@ -141,8 +148,13 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
         // Framerate limit
         glfwPollEvents();
 
-        // Tick the player
-        Player_tick(player, window);
+        // Update the timer
+        Timer_advanceTime(&timer);
+    
+        // Call the tick to reach updates 20 per second
+        for (int i = 0; i < timer.ticks; ++i) {
+            tick(player, window);
+        }
 
         // Render the game
         render(*level, *levelRenderer, *player);
@@ -165,4 +177,9 @@ int main(void) {
     run(&level, &levelRenderer, &player);
 
     return EXIT_SUCCESS;
+}
+
+void tick(Player* player, GLFWwindow* window) {
+    // Your existing tick function
+    Player_tick(player, window);
 }

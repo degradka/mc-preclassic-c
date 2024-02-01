@@ -16,10 +16,17 @@ void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int ma
     chunk->maxX = maxX;
     chunk->maxY = maxY;
     chunk->maxZ = maxZ;
+
+    chunk->lists = glGenLists(1);
+    chunk->dirty = true;
 }
 
-void Chunk_render(Chunk* chunk) {
+void Chunk_rebuild(Chunk* chunk) {
+    // Set the chunk as not dirty
+    chunk->dirty = false;
+
     // Setup tile rendering
+    glNewList(chunk->lists, GL_COMPILE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, chunk->texture);
     Tessellator_init(&TESSELLATOR);
@@ -40,4 +47,15 @@ void Chunk_render(Chunk* chunk) {
     // Finish tile rendering
     Tessellator_flush(&TESSELLATOR);
     glDisable(GL_TEXTURE_2D);
+    glEndList();
+}
+
+void Chunk_render(Chunk* chunk) {
+    // Rebuild chunk if dirty
+    if (chunk->dirty) {
+        Chunk_rebuild(chunk);
+    }
+
+    // Call display list ID to render the chunk
+    glCallList(chunk->lists);
 }

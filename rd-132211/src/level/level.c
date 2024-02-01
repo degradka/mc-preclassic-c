@@ -31,8 +31,10 @@ void Level_init(Level* level, int width, int height, int depth) {
         int caveY = rand() % level->depth;
         int caveZ = rand() % level->height;
 
+        int caveSize = (rand() % 5) + 3;
+
         // Grow cave
-        for (int radius = 0; radius < 10; radius++) {
+        for (int radius = 0; radius < caveSize; radius++) {
             if (radius == 0) {
                 // Avoid division by zero
                 continue;
@@ -48,8 +50,7 @@ void Level_init(Level* level, int width, int height, int depth) {
                 int tileZ = caveZ + offsetZ;
 
                 // Check if tile is within the level bounds
-                if (tileX >= 0 && tileY >= 0 && tileZ >= 0
-                        && tileX < level->width && tileY < level->depth && tileZ < level->height) {
+                if (tileX >= 0 && tileY >= 0 && tileZ >= 0 && tileX < level->width - 1 && tileY < level->depth && tileZ < level->height - 1) {
 
                     // Calculate index from x, y, and z
                     int index = (tileY * level->height + tileZ) * level->width + tileX;
