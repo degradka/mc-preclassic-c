@@ -33,11 +33,11 @@ void Level_init(Level* level, int width, int height, int depth) {
 
     // Generate caves
     for (int i = 0; i < 1000; i++) {
+        int caveSize = (int) (rand() % 7) + 1;
+
         int caveX = rand() % level->width;
         int caveY = rand() % level->depth;
         int caveZ = rand() % level->height;
-
-        int caveSize = (rand() % 5) + 3;
 
         // Grow cave
         for (int radius = 0; radius < caveSize; radius++) {
@@ -46,7 +46,7 @@ void Level_init(Level* level, int width, int height, int depth) {
                 continue;
             }
 
-            for (int sphere = 0; sphere < 3000; sphere++) {
+            for (int sphere = 0; sphere < 1000; sphere++) {
                 int offsetX = rand() % (radius * 2) - radius;
                 int offsetY = rand() % (radius * 2) - radius;
                 int offsetZ = rand() % (radius * 2) - radius;
