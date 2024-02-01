@@ -10,7 +10,13 @@
 #include "timer.h"
 
 GLFWwindow* window;
+Level level;
+LevelRenderer levelRenderer;
+Player player;
 Timer timer;
+
+const int width = 1024;
+const int height = 768;
 
 void tick(Player* player, GLFWwindow* window);
 
@@ -21,9 +27,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
-    int width = 1024;
-    int height = 768;
-
     // Initialize GLFW
     if (!glfwInit()) {
         fprintf(stderr, "Failed to initialize GLFW\n");
@@ -59,12 +62,6 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    // Set up perspective
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluPerspective(70, width / (float)height, 0.05F, 1000);
-    glMatrixMode(GL_MODELVIEW);
-
     // Grab the mouse
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -80,7 +77,7 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     Player_init(player, level);
 
     // Initialize the timer
-    Timer_init(&timer, 20.0);
+    Timer_init(&timer, 60.0);
 
     return 1; // Return 1 on success
 }
@@ -95,6 +92,7 @@ void destroy(Level* level) {
 }
 
 void moveCameraToPlayer(Player* player) {
+    // Debug
     printf("Player Position: (%.2f, %.2f, %.2f)\n", player->x, player->y, player->z);
     printf("Mouse Look: (xRotation=%.2f, yRotation=%.2f)\n", player->xRotation, player->yRotation);
 
@@ -109,7 +107,19 @@ void moveCameraToPlayer(Player* player) {
     glTranslated(-player->x, -player->y, -player->z);
 }
 
-void render(Level level, LevelRenderer levelRenderer, Player player) {
+void setupCamera(Player* player) {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    gluPerspective(70, width / (float) height, 0.05F, 1000);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    moveCameraToPlayer(player);
+}
+
+void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow* window) {
     // Get mouse motion
     double motionX, motionY;
     glfwGetCursorPos(window, &motionX, &motionY);
@@ -117,16 +127,13 @@ void render(Level level, LevelRenderer levelRenderer, Player player) {
     motionY *= 0.1;
 
     // Rotate the camera using the mouse motion input
-    Player_turn(&player, motionX, motionY);
+    Player_turn(player, window, motionX, motionY);
 
     // Clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    // Reset camera
-    glLoadIdentity();
-
-    // Move camera to player's position
-    moveCameraToPlayer(&player);
+    // Setup normal player camera
+    setupCamera(player);
 
     // Render level chunks
     LevelRenderer_render(&levelRenderer);
@@ -157,7 +164,7 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
         }
 
         // Render the game
-        render(*level, *levelRenderer, *player);
+        render(*level, *levelRenderer, player, window);
 
         // Update the display
         glfwSwapBuffers(window);
@@ -168,10 +175,6 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
 }
 
 int main(void) {
-    Level level;
-    LevelRenderer levelRenderer;
-    Player player;
-
     // Run the game
     run(&level, &levelRenderer, &player);
 
