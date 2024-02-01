@@ -6,6 +6,7 @@
 
 typedef struct {
     Level* level;
+    int texture;
 
     int minX, minY, minZ;
     int maxX, maxY, maxZ;

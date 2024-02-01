@@ -68,7 +68,7 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     glfwSetKeyCallback(window, keyCallback);
 
     // Initialize Level
-    Level_init(level, 256, 256, 64);
+    Level_init(level, 128, 128, 64);
 
     // Initialize LevelRenderer
     LevelRenderer_init(levelRenderer, level);

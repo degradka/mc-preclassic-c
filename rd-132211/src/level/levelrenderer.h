@@ -4,7 +4,7 @@
 #include "level.h"
 #include "chunk.h"
 
-#define CHUNK_SIZE 8
+#define CHUNK_SIZE 16
 
 typedef struct {
     Chunk* chunks;

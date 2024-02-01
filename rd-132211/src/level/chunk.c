@@ -1,11 +1,14 @@
 #include "chunk.h"
 #include "tile.h"
 #include "tessellator.h"
+#include "../textures.h"
 
 extern Tessellator TESSELLATOR;
 
 void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
     chunk->level = level;
+
+    chunk->texture = loadTexture("resources/terrain.png", GL_NEAREST);
 
     chunk->minX = minX;
     chunk->minY = minY;
@@ -18,6 +21,7 @@ void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int ma
 void Chunk_render(Chunk* chunk) {
     // Setup tile rendering
     glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, chunk->texture);
     Tessellator_init(&TESSELLATOR);
 
     // For each tile in this chunk
