@@ -89,6 +89,7 @@ void Player_tick(Player* player, GLFWwindow* window) {
     Player_move(player, 0, -0.5F, 0);
 }
 
+// TODO: Make this function actually work...
 void Player_moveRelative(Player* player, float x, float z, float speed) {
     // Calculate sin and cos of player rotation
     float sin_val = (float) sin(player->yRotation);

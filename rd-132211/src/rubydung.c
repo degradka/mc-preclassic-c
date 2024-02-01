@@ -72,7 +72,7 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
     glfwSetKeyCallback(window, keyCallback);
 
     // Initialize Level
-    Level_init(level, 128, 128, 64);
+    Level_init(level, 256, 256, 64);
 
     // Initialize LevelRenderer
     LevelRenderer_init(levelRenderer, level);
@@ -167,7 +167,6 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
     destroy(level);
 }
 
-// TODO: FPS IS LOW AS FUCK
 int main(void) {
     Level level;
     LevelRenderer levelRenderer;
