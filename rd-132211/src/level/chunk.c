@@ -38,7 +38,7 @@ void Chunk_rebuild(Chunk* chunk, int layer) {
                 // Is a tile at this location?
                 if (Level_isTile(chunk->level, x, y, z)) {
                     // Grass is only on the first 7 tiles if the brightness is on maximum
-                    if (y > chunk->level->depth - 7 && Level_getBrightness(chunk->level, x, y, z) == 1.0F) {
+                    if (y > chunk->level->depth - 40 && Level_getBrightness(chunk->level, x, y, z) == 1.0F) {
                         Tile_render(&grass, &TESSELLATOR, chunk->level, layer, x, y, z);
                     } else {
                         Tile_render(&rock, &TESSELLATOR, chunk->level, layer, x, y, z);
