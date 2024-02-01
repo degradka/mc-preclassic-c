@@ -141,6 +141,9 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
         // Framerate limit
         glfwPollEvents();
 
+        // Tick the player
+        Player_tick(player, window);
+
         // Render the game
         render(*level, *levelRenderer, *player);
 
