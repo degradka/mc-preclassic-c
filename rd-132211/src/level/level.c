@@ -46,10 +46,15 @@ void Level_init(Level* level, int width, int height, int depth) {
                 continue;
             }
 
-            for (int sphere = 0; sphere < 1000; sphere++) {
+            for (int sphere = 0; sphere < 3000; sphere++) {
                 int offsetX = rand() % (radius * 2) - radius;
                 int offsetY = rand() % (radius * 2) - radius;
                 int offsetZ = rand() % (radius * 2) - radius;
+
+                double distance = pow(offsetX, 2) + pow(offsetY, 2) + pow(offsetZ, 2);
+                if (distance > radius * radius) {
+                    continue;
+                }
 
                 int tileX = caveX + offsetX;
                 int tileY = caveY + offsetY;

@@ -9,6 +9,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     float minV = 0.0F;
     float maxV = minV + 16 / 256.0F;
 
+    float shadeX = 0.0f;
+    float shadeY = 1.0f;
+    float shadeZ = 0.8f;
+
     float minX = x + 0.0F;
     float maxX = x + 1.0F;
     float minY = y + 0.0F;
@@ -19,10 +23,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     // Render bottom face
     if (!Level_isSolidTile(level, x, y - 1, z)) {
         // Get the brightness of the tile below
-        float brightness = Level_getBrightness(level, x, y - 1, z);
+        float brightness = Level_getBrightness(level, x, y - 1, z) * shadeY;
 
         // Don't render face if both conditions are the same (layer != brightness)
-        if ((layer == 1) ^ (brightness == 1)) {
+        if ((layer == 1) ^ (brightness == shadeY)) {
             Tessellator_color(tessellator, brightness, brightness, brightness);
             Tessellator_texture(tessellator, minU, maxV);
             Tessellator_vertex(tessellator, minX, minY, maxZ);
@@ -38,10 +42,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     // Render top face
     if (!Level_isSolidTile(level, x, y + 1, z)) {
         // Get the brightness of the tile above
-        float brightness = Level_getBrightness(level, x, y + 1, z);
+        float brightness = Level_getBrightness(level, x, y + 1, z) * shadeY;
 
         // Don't render face if both conditions are the same (layer != brightness)
-        if ((layer == 1) ^ (brightness == 1)) {
+        if ((layer == 1) ^ (brightness == shadeY)) {
             Tessellator_color(tessellator, brightness, brightness, brightness);
             Tessellator_texture(tessellator, maxU, maxV);
             Tessellator_vertex(tessellator, maxX, maxY, maxZ);
@@ -57,10 +61,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     // Render side faces Z
     if (!Level_isSolidTile(level, x, y, z - 1)) {
         // Get the brightness of the tile next to it
-        float brightness = Level_getBrightness(level, x, y, z - 1);
+        float brightness = Level_getBrightness(level, x, y, z - 1) * shadeZ;
 
         // Don't render face if both conditions are the same (layer != brightness)
-        if ((layer == 1) ^ (brightness == 1)) {
+        if ((layer == 1) ^ (brightness == shadeZ)) {
             Tessellator_color(tessellator, brightness, brightness, brightness);
             Tessellator_texture(tessellator, maxU, minV);
             Tessellator_vertex(tessellator, minX, maxY, minZ);
@@ -74,10 +78,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     }
     if (!Level_isSolidTile(level, x, y, z + 1)) {
         // Get the brightness of the tile next to it
-        float brightness = Level_getBrightness(level, x, y, z + 1);
+        float brightness = Level_getBrightness(level, x, y, z + 1) * shadeZ;
 
         // Don't render face if both conditions are the same (layer != brightness)
-        if ((layer == 1) ^ (brightness == 1)) {
+        if ((layer == 1) ^ (brightness == shadeZ)) {
             Tessellator_color(tessellator, brightness, brightness, brightness);
             Tessellator_texture(tessellator, minU, minV);
             Tessellator_vertex(tessellator, minX, maxY, maxZ);
@@ -93,10 +97,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     // Render side faces X
     if (!Level_isSolidTile(level, x - 1, y, z)) {
         // Get the brightness of the tile next to it
-        float brightness = Level_getBrightness(level, x - 1, y, z);
+        float brightness = Level_getBrightness(level, x - 1, y, z) * shadeX;
 
         // Don't render face if both conditions are the same (layer != brightness)
-        if ((layer == 1) ^ (brightness == 1)) {
+        if ((layer == 1) ^ (brightness == shadeX)) {
             Tessellator_color(tessellator, brightness, brightness, brightness);
             Tessellator_texture(tessellator, maxU, minV);
             Tessellator_vertex(tessellator, minX, maxY, maxZ);
@@ -110,10 +114,10 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
     }
     if (!Level_isSolidTile(level, x + 1, y, z)) {
         // Get the brightness of the tile next to it
-        float brightness = Level_getBrightness(level, x + 1, y, z);
+        float brightness = Level_getBrightness(level, x + 1, y, z) * shadeX;
 
         // Don't render face if both conditions are the same (layer != brightness)
-        if ((layer == 1) ^ (brightness == 1)) {
+        if ((layer == 1) ^ (brightness == shadeX)) {
             Tessellator_color(tessellator, brightness, brightness, brightness);
             Tessellator_texture(tessellator, minU, maxV);
             Tessellator_vertex(tessellator, maxX, minY, maxZ);

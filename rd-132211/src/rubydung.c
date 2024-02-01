@@ -30,8 +30,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 void initFog() {
     glEnable(GL_FOG);
-    glFogi(GL_FOG_MODE, GL_VIEWPORT_BIT);
-    glFogf(GL_FOG_DENSITY, 0.2f);
+    glFogi(GL_FOG_MODE, GL_LINEAR);
+    glFogf(GL_FOG_START, -10);
+    glFogf(GL_FOG_END, 20);
     glFogfv(GL_FOG_COLOR, fogColor);
     glDisable(GL_FOG);
 }
