@@ -1,3 +1,5 @@
+// level.c
+
 #include "level.h"
 
 void Level_init(Level* level, int width, int height, int depth) {
@@ -82,4 +84,51 @@ bool Level_isSolidTile(const Level* level, int x, int y, int z) {
 
 void Level_destroy(Level* level) {
     free(level->blocks);
+}
+
+ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox) {
+    ArrayList_AABB result;
+    result.size = 0;
+    result.capacity = 10;
+    result.aabbs = (AABB*)malloc(result.capacity * sizeof(AABB));
+
+    int minX = (int)(floor(boundingBox->minX) - 1);
+    int maxX = (int)(ceil(boundingBox->maxX) + 1);
+    int minY = (int)(floor(boundingBox->minY) - 1);
+    int maxY = (int)(ceil(boundingBox->maxY) + 1);
+    int minZ = (int)(floor(boundingBox->minZ) - 1);
+    int maxZ = (int)(ceil(boundingBox->maxZ) + 1);
+
+    // Minimum level position
+    minX = MAX(0, minX);
+    minY = MAX(0, minY);
+    minZ = MAX(0, minZ);
+
+    // Maximum level position
+    maxX = MIN(level->width, maxX);
+    maxY = MIN(level->depth, maxY);
+    maxZ = MIN(level->height, maxZ);
+
+    // Include all surrounding tiles
+    for (int x = minX; x < maxX; x++) {
+        for (int y = minY; y < maxY; y++) {
+            for (int z = minZ; z < maxZ; z++) {
+                if (Level_isSolidTile(level, x, y, z)) {
+                    if (result.size == result.capacity) {
+                        // Resize the array if needed
+                        result.capacity *= 2;
+                        result.aabbs = (AABB*)realloc(result.aabbs, result.capacity * sizeof(AABB));
+                        if (!result.aabbs) {
+                            fprintf(stderr, "Failed to reallocate memory for AABBs\n");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+
+                    // Add the new AABB to the array
+                    result.aabbs[result.size++] = AABB_create(x, y, z, x + 1, y + 1, z + 1);
+                }
+            }
+        }
+    }
+    return result;
 }

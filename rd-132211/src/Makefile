@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g -I/usr/local/include -I.
 LDFLAGS = -lglfw -lGLEW -lGL -lGLU -lm
 
-SRC = rubydung.c player.c textures.c timer.c level/chunk.c level/level.c level/levelrenderer.c level/tessellator.c level/tile.c
+SRC = rubydung.c player.c textures.c timer.c level/chunk.c level/level.c level/levelrenderer.c level/tessellator.c level/tile.c phys/aabb.c
 OBJ = $(SRC:.c=.o)
 
 all: rubydung

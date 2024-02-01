@@ -106,7 +106,7 @@ void moveCameraToPlayer(Player* player) {
     glRotatef(player->yRotation, 0.0f, 1.0f, 0.0f);
 
     // Move camera to player's location
-    glTranslatef(-player->x, -player->y, -player->z);
+    glTranslated(-player->x, -player->y, -player->z);
 }
 
 void render(Level level, LevelRenderer levelRenderer, Player player) {

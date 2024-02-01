@@ -1,9 +1,16 @@
+// level.h
+
 #ifndef LEVEL_H
 #define LEVEL_H
 
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "../phys/aabb.h"
+#include <math.h>
+
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 typedef unsigned char byte;
 
@@ -14,9 +21,19 @@ typedef struct {
     byte* blocks;
 } Level;
 
+typedef struct {
+    int size;
+    int capacity;
+    AABB* aabbs;
+} ArrayList_AABB;
+
+ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox);
+
 void Level_init(Level* level, int width, int height, int depth);
 bool Level_isTile(const Level* level, int x, int y, int z);
 bool Level_isSolidTile(const Level* level, int x, int y, int z);
 void Level_destroy(Level* level);
+
+ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox);
 
 #endif  // LEVEL_H
