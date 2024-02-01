@@ -54,5 +54,6 @@ dkms.conf
 # VS Codium stuff
 .vscode/
 
-# Output file
+# Output files
 rubydung
+*.dat

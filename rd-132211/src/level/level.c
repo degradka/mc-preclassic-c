@@ -7,6 +7,13 @@ void Level_init(Level* level, int width, int height, int depth) {
     level->height = height;
     level->depth = depth;
 
+    /*
+    FILE* levelFile = fopen("level.dat", "rb");
+    if (levelFile) {
+        fclose(levelFile);
+        Level_load(level);
+    } else {
+        */
     // Create level with tiles
     level->blocks = (byte*)malloc(width * height * depth * sizeof(byte));
     level->lightDepths = (int*)malloc(width * height * sizeof(int));
@@ -42,7 +49,7 @@ void Level_init(Level* level, int width, int height, int depth) {
         // Grow cave
         for (int radius = 0; radius < caveSize; radius++) {
             if (radius == 0) {
-                // Avoid division by zero
+                    // Avoid division by zero
                 continue;
             }
 
@@ -184,4 +191,26 @@ ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox) {
         }
     }
     return result;
+}
+
+// TODO: Level loading gives segfault
+void Level_load(Level* level) {
+    FILE* file = fopen("level.dat", "rb");
+    if (file) {
+        fread(level->blocks, sizeof(byte), level->width * level->height * level->depth, file);
+        fclose(file);
+
+        // Recalculate light depths after loading
+        calcLightDepths(level, 0, 0, level->width, level->height);
+    } else {
+        fprintf(stderr, "Failed to open level.dat for reading\n");
+    }
+}
+
+void Level_save(const Level* level) {
+    FILE* file = fopen("level.dat", "wb");
+    if (file) {
+        fwrite(level->blocks, sizeof(byte), level->width * level->height * level->depth, file);
+        fclose(file);
+    }
 }

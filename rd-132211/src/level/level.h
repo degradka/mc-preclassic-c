@@ -37,6 +37,8 @@ bool Level_isSolidTile(const Level* level, int x, int y, int z);
 void Level_destroy(Level* level);
 float Level_getBrightness(const Level* level, int x, int y, int z);
 bool Level_isLightBlocker(const Level* level, int x, int y, int z);
+void Level_load(Level* level);
+void Level_save(const Level* level);
 
 ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox);
 

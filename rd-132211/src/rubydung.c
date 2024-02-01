@@ -94,6 +94,9 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
 }
 
 void destroy(Level* level) {
+    // Save level
+    Level_save(level);
+
     // Destroy Level
     Level_destroy(level);
 
