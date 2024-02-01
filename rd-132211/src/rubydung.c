@@ -18,12 +18,22 @@ Timer timer;
 const int width = 1024;
 const int height = 768;
 
+GLfloat fogColor[4] = {14 / 255.0f, 11 / 255.0f, 10 / 255.0f, 1.0f};
+
 void tick(Player* player, GLFWwindow* window);
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
+}
+
+void initFog() {
+    glEnable(GL_FOG);
+    glFogi(GL_FOG_MODE, GL_VIEWPORT_BIT);
+    glFogf(GL_FOG_DENSITY, 0.2f);
+    glFogfv(GL_FOG_COLOR, fogColor);
+    glDisable(GL_FOG);
 }
 
 int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
@@ -135,8 +145,18 @@ void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow
     // Setup normal player camera
     setupCamera(player);
 
-    // Render level chunks
-    LevelRenderer_render(&levelRenderer);
+    // Setup fog
+    initFog();
+
+    // Render bright tiles
+    LevelRenderer_render(&levelRenderer, 0);
+
+    // Enable fog to render shadow
+    glEnable(GL_FOG);
+
+    LevelRenderer_render(&levelRenderer, 1);
+
+    glDisable(GL_TEXTURE_2D);
 
     // Update the display
     glfwSwapBuffers(window);

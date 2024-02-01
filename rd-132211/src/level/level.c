@@ -9,8 +9,9 @@ void Level_init(Level* level, int width, int height, int depth) {
 
     // Create level with tiles
     level->blocks = (byte*)malloc(width * height * depth * sizeof(byte));
-    if (!level->blocks) {
-        fprintf(stderr, "Failed to allocate memory for level blocks\n");
+    level->lightDepths = (int*)malloc(width * height * sizeof(int));
+    if (!level->blocks || !level->lightDepths) {
+        fprintf(stderr, "Failed to allocate memory for level blocks or lightDepths\n");
         exit(EXIT_FAILURE);
     }
 
@@ -26,6 +27,9 @@ void Level_init(Level* level, int width, int height, int depth) {
             }
         }
     }
+
+    // Initialize lightDepths array
+    calcLightDepths(level, 0, 0, width, height);
 
     // Generate caves
     for (int i = 0; i < 1000; i++) {
@@ -65,6 +69,49 @@ void Level_init(Level* level, int width, int height, int depth) {
     }
 }
 
+void calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ) {
+    // For each x/z position in level
+    for (int x = minX; x < minX + maxX; x++) {
+        for (int z = minZ; z < minZ + maxZ; z++) {
+
+            // Get previous light depth value
+            int prevDepth = level->lightDepths[x + z * level->width];
+
+            // Calculate new light depth
+            int depth = level->depth - 1;
+            while (depth > 0 && !Level_isLightBlocker(level, x, depth, z)) {
+                depth--;
+            }
+
+            // Set new light depth
+            level->lightDepths[x + z * level->width] = depth;
+        }
+    }
+}
+
+bool Level_isLightBlocker(const Level* level, int x, int y, int z) {
+    return Level_isSolidTile(level, x, y, z);
+}
+
+float Level_getBrightness(const Level* level, int x, int y, int z) {
+    // Define brightness
+    float dark = 0.8F;
+    float light = 1.0F;
+
+    // Is light tile
+    if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height) {
+        return light;
+    }
+
+    // Is dark tile
+    if (y < level->lightDepths[x + z * level->width]) {
+        return dark;
+    }
+
+    // Unknown brightness
+    return light;
+}
+
 bool Level_isTile(const Level* level, int x, int y, int z) {
     // Is location out of the level?
     if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height) {
@@ -84,6 +131,7 @@ bool Level_isSolidTile(const Level* level, int x, int y, int z) {
 
 void Level_destroy(Level* level) {
     free(level->blocks);
+    free(level->lightDepths);
 }
 
 ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox) {

@@ -43,12 +43,36 @@ void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
     }
 }
 
-void LevelRenderer_render(const LevelRenderer* renderer) {
+void LevelRenderer_render(const LevelRenderer* renderer, int layer) {
     for (int i = 0; i < renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ; ++i) {
-        Chunk_render(&renderer->chunks[i]);
+        Chunk_render(&renderer->chunks[i], layer);
     }
 }
 
 void LevelRenderer_destroy(LevelRenderer* renderer) {
     free(renderer->chunks);
+}
+
+void LevelRenderer_setDirty(const LevelRenderer* renderer, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    // To chunk coordinates
+    minX /= CHUNK_SIZE;
+    minY /= CHUNK_SIZE;
+    minZ /= CHUNK_SIZE;
+    maxX /= CHUNK_SIZE;
+    maxY /= CHUNK_SIZE;
+    maxZ /= CHUNK_SIZE;
+
+    // Minimum and maximum y
+    minY = MIN(0, minY);
+    maxY = MIN(15, maxY);
+
+    // Mark all chunks as dirty
+    for (int x = minX; x <= maxX; x++) {
+        for (int y = minY; y <= maxY; y++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                // Get chunk at this position
+                Chunk_setDirty(&renderer->chunks[(x + y * renderer->chunkAmountX) * renderer->chunkAmountZ + z]);
+            }
+        }
+    }
 }

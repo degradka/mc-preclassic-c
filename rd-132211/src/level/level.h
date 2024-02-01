@@ -19,6 +19,7 @@ typedef struct {
     int height;
     int depth;
     byte* blocks;
+    int* lightDepths;
 } Level;
 
 typedef struct {
@@ -29,10 +30,13 @@ typedef struct {
 
 ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox);
 
+void calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ);
 void Level_init(Level* level, int width, int height, int depth);
 bool Level_isTile(const Level* level, int x, int y, int z);
 bool Level_isSolidTile(const Level* level, int x, int y, int z);
 void Level_destroy(Level* level);
+float Level_getBrightness(const Level* level, int x, int y, int z);
+bool Level_isLightBlocker(const Level* level, int x, int y, int z);
 
 ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox);
 

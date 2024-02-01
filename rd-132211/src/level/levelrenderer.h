@@ -14,7 +14,8 @@ typedef struct {
 } LevelRenderer;
 
 void LevelRenderer_init(LevelRenderer* renderer, Level* level);
-void LevelRenderer_render(const LevelRenderer* renderer);
+void LevelRenderer_render(const LevelRenderer* renderer, int layer);
 void LevelRenderer_destroy(LevelRenderer* renderer);
+void LevelRenderer_setDirty(const LevelRenderer* renderer, int minX, int minY, int minZ, int maxX, int maxY, int maxZ);
 
 #endif  // LEVELRENDERER_H

@@ -23,7 +23,7 @@ void Player_setPosition(Player* player, float x, float y, float z) {
 
 void Player_resetPosition(Player* player) {
     float x = (float) rand() / RAND_MAX * player->level->width;
-    float y = (float) (player->level->depth - 29);
+    float y = (float) (player->level->depth) + 3;
     float z = (float) rand() / RAND_MAX * player->level->height;
 
     Player_setPosition(player, x, y, z);
@@ -108,7 +108,7 @@ void Player_tick(Player* player, GLFWwindow* window) {
     }
 
     // Add motion to the player using keyboard input
-    Player_moveRelative(player, vertical, forward, player->onGround ? 0.1F : 0.01F);
+    Player_moveRelative(player, vertical, forward, player->onGround ? 0.02F : 0.005F);
 
     // Apply gravity
     player->motionY -= 0.005;

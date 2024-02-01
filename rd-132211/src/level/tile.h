@@ -11,6 +11,6 @@ typedef struct {
 extern Tile grass;
 extern Tile rock;
 
-void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int x, int y, int z);
+void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int layer, int x, int y, int z);
 
 #endif  // TILE_H

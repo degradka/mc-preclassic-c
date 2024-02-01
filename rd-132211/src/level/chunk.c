@@ -17,16 +17,16 @@ void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int ma
     chunk->maxY = maxY;
     chunk->maxZ = maxZ;
 
-    chunk->lists = glGenLists(1);
+    chunk->lists = glGenLists(2);
     chunk->dirty = true;
 }
 
-void Chunk_rebuild(Chunk* chunk) {
+void Chunk_rebuild(Chunk* chunk, int layer) {
     // Set the chunk as not dirty
     chunk->dirty = false;
 
     // Setup tile rendering
-    glNewList(chunk->lists, GL_COMPILE);
+    glNewList(chunk->lists + layer, GL_COMPILE);
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, chunk->texture);
     Tessellator_init(&TESSELLATOR);
@@ -37,8 +37,12 @@ void Chunk_rebuild(Chunk* chunk) {
             for (int z = chunk->minZ; z < chunk->maxZ; ++z) {
                 // Is a tile at this location?
                 if (Level_isTile(chunk->level, x, y, z)) {
-                    // Render the tile
-                    Tile_render(&rock, &TESSELLATOR, chunk->level, x, y, z);
+                    // Grass is only on the first 7 tiles if the brightness is on maximum
+                    if (y > chunk->level->depth - 7 && Level_getBrightness(chunk->level, x, y, z) == 1.0F) {
+                        Tile_render(&grass, &TESSELLATOR, chunk->level, layer, x, y, z);
+                    } else {
+                        Tile_render(&rock, &TESSELLATOR, chunk->level, layer, x, y, z);
+                    }
                 }
             }
         }
@@ -50,12 +54,17 @@ void Chunk_rebuild(Chunk* chunk) {
     glEndList();
 }
 
-void Chunk_render(Chunk* chunk) {
+void Chunk_render(Chunk* chunk, int layer) {
     // Rebuild chunk if dirty
     if (chunk->dirty) {
-        Chunk_rebuild(chunk);
+        Chunk_rebuild(chunk, 0);
+        Chunk_rebuild(chunk, 1);
     }
 
     // Call display list ID to render the chunk
-    glCallList(chunk->lists);
+    glCallList(chunk->lists + layer);
+}
+
+void Chunk_setDirty(Chunk* chunk) {
+    chunk->dirty = true;
 }
