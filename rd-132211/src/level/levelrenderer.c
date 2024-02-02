@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "levelrenderer.h"
+#include "frustum.h"
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
 void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
@@ -43,9 +44,16 @@ void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
     }
 }
 
+// TODO: Frustum doesn't work properly???????
 void LevelRenderer_render(const LevelRenderer* renderer, int layer) {
+    //Frustum* frustum = Frustum_create();
+
     for (int i = 0; i < renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ; ++i) {
+        // Render if bounding box of chunk is in frustum
+        //if (Frustum_aabbInFrustum(frustum, &renderer->chunks[i].boundingBox)) {
+            // Render chunk
         Chunk_render(&renderer->chunks[i], layer);
+        //}
     }
 }
 

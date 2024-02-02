@@ -5,10 +5,13 @@
 
 #include "level.h"
 #include "tessellator.h"
+#include "phys/aabb.h"
 
 typedef struct {
     Level* level;
     int texture;
+
+    AABB boundingBox;
 
     int minX, minY, minZ;
     int maxX, maxY, maxZ;
