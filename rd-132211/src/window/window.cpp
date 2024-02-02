@@ -33,9 +33,10 @@ int Window::initalize(int width, int height, const char* title) {
     glClearColor(0.5F, 0.8F, 1.0F, 0.0F);
     glClearDepth(1.0);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     glDepthFunc(GL_LEQUAL);
 
-    // Setup projection
+    // Setup camera
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
@@ -66,7 +67,7 @@ void Window::swapBuffers() {
 
 void Window::update() {
     if (glfwGetWindowAttrib(window, GLFW_VISIBLE)) {
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glfwSwapBuffers(window);
     }
 }

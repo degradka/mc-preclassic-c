@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -Wall -g -I/usr/local/include -I.
 LDFLAGS = -lglfw -lGLEW -lGL -lGLU -lm
 
-SRC = rubydung.cpp window/window.cpp window/events.cpp
+SRC = rubydung.cpp window/window.cpp window/events.cpp level/chunk.cpp level/level.cpp level/levelrenderer.cpp level/tessellator.cpp level/tile.cpp
 OBJ = $(SRC:.cpp=.o)
 OUTPUT_NAME = rubydung
 
