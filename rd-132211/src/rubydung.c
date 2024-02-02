@@ -139,8 +139,8 @@ void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow
     // Get mouse motion
     double motionX, motionY;
     glfwGetCursorPos(window, &motionX, &motionY);
-    motionX *= 0.1;  // Adjust sensitivity
-    motionY *= 0.1;
+    motionX *= 0.2;  // Adjust sensitivity
+    motionY *= -0.2;
 
     // Rotate the camera using the mouse motion input
     Player_turn(player, window, motionX, motionY);
