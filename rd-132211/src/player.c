@@ -81,6 +81,11 @@ void Player_move(Player* player, double x, double y, double z) {
 }
 
 void Player_tick(Player* player, GLFWwindow* window) {
+    // Store previous position
+    player->prevX = player->x;
+    player->prevY = player->y;
+    player->prevZ = player->z;
+
     float forward = 0.0F;
     float vertical = 0.0F;
 

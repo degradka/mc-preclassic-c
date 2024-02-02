@@ -102,7 +102,7 @@ void destroy(Level* level) {
     glfwTerminate();
 }
 
-void moveCameraToPlayer(Player* player) {
+void moveCameraToPlayer(Player* player, float partialTicks) {
     // Debug
     //printf("Debug: Player Position: (%.2f, %.2f, %.2f)\n", player->x, player->y, player->z);
     //printf("Debug: Mouse Look: (xRotation=%.2f, yRotation=%.2f)\n", player->xRotation, player->yRotation);
@@ -114,11 +114,16 @@ void moveCameraToPlayer(Player* player) {
     glRotatef(player->xRotation, 1.0f, 0.0f, 0.0f);
     glRotatef(player->yRotation, 0.0f, 1.0f, 0.0f);
 
+    // Smooth movement
+    double x = player->prevX + (player->x - player->prevX) * partialTicks;
+    double y = player->prevY + (player->y - player->prevY) * partialTicks;
+    double z = player->prevZ + (player->z - player->prevZ) * partialTicks;
+
     // Move camera to player's location
-    glTranslated(-player->x, -player->y, -player->z);
+    glTranslated(-x, -y, -z);
 }
 
-void setupCamera(Player* player) {
+void setupCamera(Player* player, float partialTicks) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
@@ -127,10 +132,10 @@ void setupCamera(Player* player) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    moveCameraToPlayer(player);
+    moveCameraToPlayer(player, partialTicks);
 }
 
-void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow* window) {
+void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow* window, float partialTicks) {
     // Get mouse motion
     double motionX, motionY;
     glfwGetCursorPos(window, &motionX, &motionY);
@@ -144,7 +149,7 @@ void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Setup normal player camera
-    setupCamera(player);
+    setupCamera(player, partialTicks);
 
     // Setup fog
     initFog();
@@ -190,7 +195,7 @@ void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
         }
 
         // Render the game
-        render(*level, *levelRenderer, player, window);
+        render(*level, *levelRenderer, player, window, timer.partialTicks);
 
         frames++;
 

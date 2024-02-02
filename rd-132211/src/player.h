@@ -9,6 +9,7 @@
 typedef struct {
     Level* level;
     float x, y, z;
+    double prevX, prevY, prevZ;
     double motionX, motionY, motionZ;
     float yRotation, xRotation;
     bool onGround;
