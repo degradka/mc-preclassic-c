@@ -1,17 +1,21 @@
-CC = gcc
-CFLAGS = -Wall -g -I/usr/local/include -I.
+CXX = g++
+CXXFLAGS = -Wall -g -I/usr/local/include -I.
 LDFLAGS = -lglfw -lGLEW -lGL -lGLU -lm
 
-SRC = rubydung.c player.c textures.c timer.c level/chunk.c level/level.c level/levelrenderer.c level/tessellator.c level/tile.c level/frustum.c phys/aabb.c
-OBJ = $(SRC:.c=.o)
+SRC = rubydung.cpp
+OBJ = $(SRC:.cpp=.o)
+OUTPUT_NAME = rubydung
 
-all: rubydung
+all: $(OUTPUT_NAME)
 
-rubydung: $(OBJ)
-	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+$(OUTPUT_NAME): $(OBJ)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f rubydung $(OBJ)
+	rm -f $(OUTPUT_NAME) $(OBJ)
+
+run: all
+	./$(OUTPUT_NAME)
