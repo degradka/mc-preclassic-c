@@ -26,6 +26,15 @@ void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int ma
 }
 
 void Chunk_rebuild(Chunk* chunk, int layer) {
+    if (chunk->rebuiltThisFrame == 2) {
+        // Rebuild limit reached for this frame
+        return;
+    }
+
+    // Update global stats
+    chunk->updates++;
+    chunk->rebuiltThisFrame++;
+
     // Set the chunk as not dirty
     chunk->dirty = false;
 

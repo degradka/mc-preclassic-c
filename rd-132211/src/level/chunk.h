@@ -8,6 +8,9 @@
 #include "phys/aabb.h"
 
 typedef struct {
+    int rebuiltThisFrame;
+    int updates;
+
     Level* level;
     int texture;
 

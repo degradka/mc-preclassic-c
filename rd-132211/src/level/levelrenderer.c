@@ -46,7 +46,11 @@ void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
 
 // TODO: Frustum doesn't work properly???????
 void LevelRenderer_render(const LevelRenderer* renderer, int layer) {
+    // Get current camera frustum
     //Frustum* frustum = Frustum_create();
+
+    // Reset global chunk rebuild stats
+    renderer->chunks->rebuiltThisFrame = 0;
 
     for (int i = 0; i < renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ; ++i) {
         // Render if bounding box of chunk is in frustum
