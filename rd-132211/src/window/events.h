@@ -30,6 +30,9 @@ public:
 
     static void setMouseGrabbed(bool flag);
     static bool isMouseGrabbed();
+
+    static float getMouseMotionX();
+    static float getMouseMotionY();
 };
 
 #endif // WINDOW_EVENTS_H_

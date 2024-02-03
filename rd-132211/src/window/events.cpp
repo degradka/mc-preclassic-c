@@ -94,6 +94,14 @@ bool Events::isMouseGrabbed() {
     return _cursor_locked;
 }
 
+float Events::getMouseMotionX() {
+    return deltaX;
+}
+
+float Events::getMouseMotionY() {
+    return deltaY;
+}
+
 void Events::pollEvents() {
     _current++;
     deltaX = 0.0f;
