@@ -8,6 +8,7 @@
 #include "level/level.h"
 #include "player.h"
 #include "timer.h"
+#include "hitresult.h"
 
 GLFWwindow* window;
 Level level;
@@ -22,6 +23,8 @@ GLfloat fogColor[4] = {14 / 255.0f, 11 / 255.0f, 10 / 255.0f, 1.0f};
 
 int viewportBuffer[16];
 int selectBuffer[2000];
+HitResult hitResult;
+int isHitNull = 1;
 
 void tick(Player* player, GLFWwindow* window);
 
@@ -152,21 +155,55 @@ void setupPickCamera(Player* player, float partialTicks, double x, double y) {
 
     moveCameraToPlayer(player, partialTicks);
 }
-/*
+
 void pick(float partialTicks) {
     int selectBufferPos = 0;
-    glSelectBuffer(sizeof(selectBuffer), selectBuffer);
+    //glSelectBuffer(sizeof(selectBuffer), selectBuffer);
     glRenderMode(GL_SELECT);
-    setupPickCamera(partialTicks, width / 2, height / 2);
-    //levelRenderer
+    setupPickCamera(&player, partialTicks, width / 2, height / 2);
+    //LevelRenderer_renderPick(&level, &levelRenderer);  <--- throws a fucking segfault TODO
+    int hits = glRenderMode(GL_RENDER);
+    long closest = 0L;
+    int names[10];
+    int hitNameCount = 0;
+
+    for (int i = 0; i < hits; i++) {
+        int nameCount = selectBuffer[selectBufferPos++];
+        long minZ = selectBuffer[selectBufferPos++];
+        selectBufferPos++;
+        int j;
+
+        if (minZ >= closest && i != 0) {
+            for (j = 0; j < nameCount; j++) {
+                selectBufferPos++;
+            }
+        } else {
+            closest = minZ;
+            hitNameCount = nameCount;
+
+            for (int j = 0; j < nameCount; j++) {
+                names[j] = selectBuffer[selectBufferPos++];
+            }
+        }
+    }
+
+    if (hitNameCount > 0) {
+        //hitresult_create(&hitResult, names[0], names[1], names[2], names[3], names[4]);
+        isHitNull = 0;
+    } else {
+        isHitNull = 1;
+    }
+
 }
-*/
+
 void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow* window, float partialTicks) {
     // Get mouse motion
     double motionX, motionY;
     glfwGetCursorPos(window, &motionX, &motionY);
     motionX *= 0.2;  // Adjust sensitivity
     motionY *= -0.2;
+
+    pick(partialTicks);
 
     // Rotate the camera using the mouse motion input
     Player_turn(player, window, motionX, motionY);
@@ -191,6 +228,10 @@ void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow
 
     // Finish rendering
     glDisable(GL_TEXTURE_2D);
+
+    if (!isHitNull) {
+        LevelRenderer_renderHit(&levelRenderer, &hitResult);
+    }
 
     // Update the display
     glfwSwapBuffers(window);

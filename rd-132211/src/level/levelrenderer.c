@@ -11,6 +11,7 @@ void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
     renderer->chunkAmountX = level->width / CHUNK_SIZE;
     renderer->chunkAmountY = level->depth / CHUNK_SIZE;
     renderer->chunkAmountZ = level->height / CHUNK_SIZE;
+    level->renderer = &renderer;
 
     // Create the chunk array
     renderer->chunks = (Chunk*)malloc(renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ * sizeof(Chunk));

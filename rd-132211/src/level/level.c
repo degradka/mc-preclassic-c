@@ -8,6 +8,7 @@ void Level_init(Level* level, int width, int height, int depth) {
     level->width = width;
     level->height = height;
     level->depth = depth;
+    level->renderer = NULL;
 
     // Create level with tiles
     level->blocks = (byte*)malloc(width * height * depth * sizeof(byte));
@@ -51,6 +52,13 @@ void calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ) {
 
             // Set new light depth
             level->lightDepths[x + z * level->width] = depth;
+
+            if (prevDepth != depth) {
+                int ylMin = prevDepth < depth ? prevDepth : depth;
+                int ylMax = prevDepth > depth ? prevDepth : depth;
+
+                levelRenderer_lightColumnChanged(&level->renderer, x, z, ylMin, ylMax);
+            }
         }
     }
 }
@@ -160,4 +168,13 @@ void Level_save(const Level* level) {
     gzFile file = gzopen("level.dat", "wb");
     gzwrite(file, level->blocks, sizeof(byte) * (level->width * level->height * level->depth));
     gzclose(file);
+}
+
+void level_setTile(Level* level, int x, int y, int z, int type) {
+    if (x >= 0 && y >= 0 && z >= 0 && x < level->width && y < level->depth && z < level-> height) {
+        level->blocks[(y * level->height + z) * level->width + x] = (unsigned char)type;
+        calcLightDepths(level, x, z, 1, 1);
+
+        levelRenderer_tileChanged(&level->renderer, x, y, z);
+    }
 }
