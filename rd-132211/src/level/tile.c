@@ -130,3 +130,54 @@ void Tile_render(Tile* tile, Tessellator* tessellator, const Level* level, int l
         }
     }
 }
+
+void Face_render(Tessellator* tessellator, int x, int y, int z, int face) {
+    float minX = x + 0.0F;
+    float maxX = x + 1.0F;
+    float minY = y + 0.0F;
+    float maxY = y + 1.0F;
+    float minZ = z + 0.0F;
+    float maxZ = z + 1.0F;
+
+    if (face == 0) {
+        Tessellator_vertex(tessellator, minX, minY, maxZ);
+        Tessellator_vertex(tessellator, minX, minY, minZ);
+        Tessellator_vertex(tessellator, maxX, minY, minZ);
+        Tessellator_vertex(tessellator, maxX, minY, maxZ);
+    }
+
+    if (face == 1) {
+        Tessellator_vertex(tessellator, maxX, maxY, maxZ);
+        Tessellator_vertex(tessellator, maxX, maxY, minZ);
+        Tessellator_vertex(tessellator, minX, maxY, minZ);
+        Tessellator_vertex(tessellator, minX, maxY, maxZ);
+    }
+
+    if (face == 2) {
+        Tessellator_vertex(tessellator, minX, maxY, minZ);
+        Tessellator_vertex(tessellator, maxX, maxY, minZ);
+        Tessellator_vertex(tessellator, maxX, minY, minZ);
+        Tessellator_vertex(tessellator, minX, minY, minZ);
+    }
+
+    if (face == 3) {
+        Tessellator_vertex(tessellator, minX, maxY, maxZ);
+        Tessellator_vertex(tessellator, minX, minY, maxZ);
+        Tessellator_vertex(tessellator, maxX, minY, maxZ);
+        Tessellator_vertex(tessellator, maxX, maxY, maxZ);
+    }
+
+    if (face == 4) {
+        Tessellator_vertex(tessellator, minX, maxY, maxZ);
+        Tessellator_vertex(tessellator, minX, maxY, minZ);
+        Tessellator_vertex(tessellator, minX, minY, minZ);
+        Tessellator_vertex(tessellator, minX, minY, maxZ);
+    }
+
+    if (face == 5) {
+        Tessellator_vertex(tessellator, maxX, minY, maxZ);
+        Tessellator_vertex(tessellator, maxX, minY, minZ);
+        Tessellator_vertex(tessellator, maxX, maxY, minZ);
+        Tessellator_vertex(tessellator, maxX, maxY, maxZ);
+    }
+}

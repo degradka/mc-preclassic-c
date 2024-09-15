@@ -1,19 +1,14 @@
 // level.c
 
 #include "level.h"
+#include "levelrenderer.h"
+#include <zlib.h>
 
 void Level_init(Level* level, int width, int height, int depth) {
     level->width = width;
     level->height = height;
     level->depth = depth;
 
-    /*
-    FILE* levelFile = fopen("level.dat", "rb");
-    if (levelFile) {
-        fclose(levelFile);
-        Level_load(level);
-    } else {
-        */
     // Create level with tiles
     level->blocks = (byte*)malloc(width * height * depth * sizeof(byte));
     level->lightDepths = (int*)malloc(width * height * sizeof(int));
@@ -29,7 +24,7 @@ void Level_init(Level* level, int width, int height, int depth) {
                 // Calculate index from x, y, and z
                 int index = (y * level->height + z) * level->width + x;
 
-                // Set tile based on location
+                // Fill level with tiles
                 level->blocks[index] = (byte)(y < depth / 2 ? 1 : 0);
             }
         }
@@ -37,49 +32,7 @@ void Level_init(Level* level, int width, int height, int depth) {
 
     // Initialize lightDepths array
     calcLightDepths(level, 0, 0, width, height);
-
-    // Generate caves
-    for (int i = 0; i < 1000; i++) {
-        int caveSize = (int) (rand() % 7) + 1;
-
-        int caveX = rand() % level->width;
-        int caveY = rand() % level->depth;
-        int caveZ = rand() % level->height;
-
-        // Grow cave
-        for (int radius = 0; radius < caveSize; radius++) {
-            if (radius == 0) {
-                    // Avoid division by zero
-                continue;
-            }
-
-            for (int sphere = 0; sphere < 1000; sphere++) {
-                int offsetX = rand() % (radius * 2) - radius;
-                int offsetY = rand() % (radius * 2) - radius;
-                int offsetZ = rand() % (radius * 2) - radius;
-
-                // Sphere shape
-                double distance = pow(offsetX, 2) + pow(offsetY, 2) + pow(offsetZ, 2);
-                if (distance > radius * radius) {
-                    continue;
-                }
-
-                int tileX = caveX + offsetX;
-                int tileY = caveY + offsetY;
-                int tileZ = caveZ + offsetZ;
-
-                // Check if tile is within the level bounds
-                if (tileX >= 0 && tileY >= 0 && tileZ >= 0 && tileX < level->width - 1 && tileY < level->depth && tileZ < level->height - 1) {
-
-                    // Calculate index from x, y, and z
-                    int index = (tileY * level->height + tileZ) * level->width + tileX;
-
-                    // Fill level with tiles
-                    level->blocks[index] = (byte)0;
-                }
-            }
-        }
-    }
+    Level_load(level);
 }
 
 void calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ) {
@@ -194,24 +147,17 @@ ArrayList_AABB Level_getCubes(const Level* level, const AABB* boundingBox) {
     return result;
 }
 
-// TODO: Level loading gives segfault
 void Level_load(Level* level) {
-    FILE* file = fopen("level.dat", "rb");
-    if (file) {
-        fread(level->blocks, sizeof(byte), level->width * level->height * level->depth, file);
-        fclose(file);
+    gzFile file = gzopen("level.dat", "rb");
 
-        // Recalculate light depths after loading
-        calcLightDepths(level, 0, 0, level->width, level->height);
-    } else {
-        fprintf(stderr, "Failed to open level.dat for reading\n");
-    }
+    if (file == NULL) return;
+
+    gzread(file, level->blocks, sizeof(byte) * (level->width * level->height * level->depth));
+    gzclose(file);
 }
 
 void Level_save(const Level* level) {
-    FILE* file = fopen("level.dat", "wb");
-    if (file) {
-        fwrite(level->blocks, sizeof(byte), level->width * level->height * level->depth, file);
-        fclose(file);
-    }
+    gzFile file = gzopen("level.dat", "wb");
+    gzwrite(file, level->blocks, sizeof(byte) * (level->width * level->height * level->depth));
+    gzclose(file);
 }

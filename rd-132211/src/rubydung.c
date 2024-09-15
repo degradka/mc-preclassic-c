@@ -20,6 +20,9 @@ const int height = 768;
 
 GLfloat fogColor[4] = {14 / 255.0f, 11 / 255.0f, 10 / 255.0f, 1.0f};
 
+int viewportBuffer[16];
+int selectBuffer[2000];
+
 void tick(Player* player, GLFWwindow* window);
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -58,6 +61,9 @@ int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
 
     // Make the window's context current
     glfwMakeContextCurrent(window);
+
+    glEnable(GL_TEXTURE_2D);
+    glShadeModel(GL_SMOOTH);
 
     // Enable alpha blending
     glEnable(GL_BLEND);
@@ -127,7 +133,7 @@ void setupCamera(Player* player, float partialTicks) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 
-    gluPerspective(70, width / (float) height, 0.05F, 1000);
+    gluPerspective(70, (double)width / (double)height, 0.05F, 1000);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -135,6 +141,26 @@ void setupCamera(Player* player, float partialTicks) {
     moveCameraToPlayer(player, partialTicks);
 }
 
+void setupPickCamera(Player* player, float partialTicks, double x, double y) {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glGetIntegerv(GL_VIEWPORT, viewportBuffer);
+    gluPickMatrix(x, y, 5.0, 5.0, viewportBuffer);
+    gluPerspective(70.0, (double)width / (double)height, 0.05f, 1000.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    moveCameraToPlayer(player, partialTicks);
+}
+/*
+void pick(float partialTicks) {
+    int selectBufferPos = 0;
+    glSelectBuffer(sizeof(selectBuffer), selectBuffer);
+    glRenderMode(GL_SELECT);
+    setupPickCamera(partialTicks, width / 2, height / 2);
+    //levelRenderer
+}
+*/
 void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow* window, float partialTicks) {
     // Get mouse motion
     double motionX, motionY;
