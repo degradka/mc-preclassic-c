@@ -44,20 +44,18 @@ void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
     }
 }
 
-// TODO: Frustum doesn't work properly???????
 void LevelRenderer_render(const LevelRenderer* renderer, int layer) {
-    // Get current camera frustum
-    //Frustum* frustum = Frustum_create();
-
     // Reset global chunk rebuild stats
     renderer->chunks->rebuiltThisFrame = 0;
 
+    frustum_calculate();
+
     for (int i = 0; i < renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ; ++i) {
         // Render if bounding box of chunk is in frustum
-        //if (Frustum_aabbInFrustum(frustum, &renderer->chunks[i].boundingBox)) {
+        if (frustum_cubeInAABB(&renderer->chunks[i].boundingBox)) {
             // Render chunk
-        Chunk_render(&renderer->chunks[i], layer);
-        //}
+            Chunk_render(&renderer->chunks[i], layer);
+        }
     }
 }
 

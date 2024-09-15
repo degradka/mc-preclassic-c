@@ -16,13 +16,13 @@ void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int ma
     chunk->maxX = maxX;
     chunk->maxY = maxY;
     chunk->maxZ = maxZ;
-
-    // Generate lists id
-    chunk->lists = glGenLists(2);
     chunk->dirty = true;
 
     // Create bounding box object of chunk
     chunk->boundingBox = AABB_create(minX, minY, minZ, maxX, maxY, maxZ);
+
+    // Generate lists id
+    chunk->lists = glGenLists(2);
 }
 
 void Chunk_rebuild(Chunk* chunk, int layer) {

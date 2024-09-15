@@ -1,189 +1,82 @@
 #include "frustum.h"
 
+#include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
-#define RIGHT 0
-#define LEFT 1
-#define BOTTOM 2
-#define TOP 3
-#define BACK 4
-#define FRONT 5
+#include <GL/gl.h>
 
-#define A 0
-#define B 1
-#define C 2
-#define D 3
+Frustum frustum;
 
-Frustum* Frustum_create() {
-    Frustum* frustum = (Frustum*)malloc(sizeof(Frustum));
-    return frustum;
+void frustum_normalizePlane(float frustum[6][4], int side) {
+    float magnitude = (float)sqrt((double)(frustum[side][0] * frustum[side][0] + frustum[side][1] * frustum[side][1] + frustum[side][2] * frustum[side][2]));
+    frustum[side][0] /= magnitude;
+    frustum[side][1] /= magnitude;
+    frustum[side][2] /= magnitude;
+    frustum[side][3] /= magnitude;
 }
 
-void Frustum_destroy(Frustum* frustum) {
-    free(frustum);
+void frustum_calculate() {
+    glGetFloatv(GL_PROJECTION_MATRIX, frustum.proj);
+    glGetFloatv(GL_MODELVIEW_MATRIX, frustum.modl);
+    frustum.clip[0] = frustum.modl[0] * frustum.proj[0] + frustum.modl[1] * frustum.proj[4] + frustum.modl[2] * frustum.proj[8] + frustum.modl[3] * frustum.proj[12];
+    frustum.clip[1] = frustum.modl[0] * frustum.proj[1] + frustum.modl[1] * frustum.proj[5] + frustum.modl[2] * frustum.proj[9] + frustum.modl[3] * frustum.proj[13];
+    frustum.clip[2] = frustum.modl[0] * frustum.proj[2] + frustum.modl[1] * frustum.proj[6] + frustum.modl[2] * frustum.proj[10] + frustum.modl[3] * frustum.proj[14];
+    frustum.clip[3] = frustum.modl[0] * frustum.proj[3] + frustum.modl[1] * frustum.proj[7] + frustum.modl[2] * frustum.proj[11] + frustum.modl[3] * frustum.proj[15];
+    frustum.clip[4] = frustum.modl[4] * frustum.proj[0] + frustum.modl[5] * frustum.proj[4] + frustum.modl[6] * frustum.proj[8] + frustum.modl[7] * frustum.proj[12];
+    frustum.clip[5] = frustum.modl[4] * frustum.proj[1] + frustum.modl[5] * frustum.proj[5] + frustum.modl[6] * frustum.proj[9] + frustum.modl[7] * frustum.proj[13];
+    frustum.clip[6] = frustum.modl[4] * frustum.proj[2] + frustum.modl[5] * frustum.proj[6] + frustum.modl[6] * frustum.proj[10] + frustum.modl[7] * frustum.proj[14];
+    frustum.clip[7] = frustum.modl[4] * frustum.proj[3] + frustum.modl[5] * frustum.proj[7] + frustum.modl[6] * frustum.proj[11] + frustum.modl[7] * frustum.proj[15];
+    frustum.clip[8] = frustum.modl[8] * frustum.proj[0] + frustum.modl[9] * frustum.proj[4] + frustum.modl[10] * frustum.proj[8] + frustum.modl[11] * frustum.proj[12];
+    frustum.clip[9] = frustum.modl[8] * frustum.proj[1] + frustum.modl[9] * frustum.proj[5] + frustum.modl[10] * frustum.proj[9] + frustum.modl[11] * frustum.proj[13];
+    frustum.clip[10] = frustum.modl[8] * frustum.proj[2] + frustum.modl[9] * frustum.proj[6] + frustum.modl[10] * frustum.proj[10] + frustum.modl[11] * frustum.proj[14];
+    frustum.clip[11] = frustum.modl[8] * frustum.proj[3] + frustum.modl[9] * frustum.proj[7] + frustum.modl[10] * frustum.proj[11] + frustum.modl[11] * frustum.proj[15];
+    frustum.clip[12] = frustum.modl[12] * frustum.proj[0] + frustum.modl[13] * frustum.proj[4] + frustum.modl[14] * frustum.proj[8] + frustum.modl[15] * frustum.proj[12];
+    frustum.clip[13] = frustum.modl[12] * frustum.proj[1] + frustum.modl[13] * frustum.proj[5] + frustum.modl[14] * frustum.proj[9] + frustum.modl[15] * frustum.proj[13];
+    frustum.clip[14] = frustum.modl[12] * frustum.proj[2] + frustum.modl[13] * frustum.proj[6] + frustum.modl[14] * frustum.proj[10] + frustum.modl[15] * frustum.proj[14];
+    frustum.clip[15] = frustum.modl[12] * frustum.proj[3] + frustum.modl[13] * frustum.proj[7] + frustum.modl[14] * frustum.proj[11] + frustum.modl[15] * frustum.proj[15];
+    frustum.m_Frustum[0][0] = frustum.clip[3] - frustum.clip[0];
+    frustum.m_Frustum[0][1] = frustum.clip[7] - frustum.clip[4];
+    frustum.m_Frustum[0][2] = frustum.clip[11] - frustum.clip[8];
+    frustum.m_Frustum[0][3] = frustum.clip[15] - frustum.clip[12];
+    frustum_normalizePlane(frustum.m_Frustum, 0);
+    frustum.m_Frustum[1][0] = frustum.clip[3] + frustum.clip[0];
+    frustum.m_Frustum[1][1] = frustum.clip[7] + frustum.clip[4];
+    frustum.m_Frustum[1][2] = frustum.clip[11] + frustum.clip[8];
+    frustum.m_Frustum[1][3] = frustum.clip[15] + frustum.clip[12];
+    frustum_normalizePlane(frustum.m_Frustum, 1);
+    frustum.m_Frustum[2][0] = frustum.clip[3] + frustum.clip[1];
+    frustum.m_Frustum[2][1] = frustum.clip[7] + frustum.clip[5];
+    frustum.m_Frustum[2][2] = frustum.clip[11] + frustum.clip[9];
+    frustum.m_Frustum[2][3] = frustum.clip[15] + frustum.clip[13];
+    frustum_normalizePlane(frustum.m_Frustum, 2);
+    frustum.m_Frustum[3][0] = frustum.clip[3] - frustum.clip[1];
+    frustum.m_Frustum[3][1] = frustum.clip[7] - frustum.clip[5];
+    frustum.m_Frustum[3][2] = frustum.clip[11] - frustum.clip[9];
+    frustum.m_Frustum[3][3] = frustum.clip[15] - frustum.clip[13];
+    frustum_normalizePlane(frustum.m_Frustum, 3);
+    frustum.m_Frustum[4][0] = frustum.clip[3] - frustum.clip[2];
+    frustum.m_Frustum[4][1] = frustum.clip[7] - frustum.clip[6];
+    frustum.m_Frustum[4][2] = frustum.clip[11] - frustum.clip[10];
+    frustum.m_Frustum[4][3] = frustum.clip[15] - frustum.clip[14];
+    frustum_normalizePlane(frustum.m_Frustum, 4);
+    frustum.m_Frustum[5][0] = frustum.clip[3] + frustum.clip[2];
+    frustum.m_Frustum[5][1] = frustum.clip[7] + frustum.clip[6];
+    frustum.m_Frustum[5][2] = frustum.clip[11] + frustum.clip[10];
+    frustum.m_Frustum[5][3] = frustum.clip[15] + frustum.clip[14];
+    frustum_normalizePlane(frustum.m_Frustum, 5);
 }
 
-static void normalizePlane(float frustum[6][4], int side) {
-    float magnitude = sqrt(frustum[side][A] * frustum[side][A] +
-                           frustum[side][B] * frustum[side][B] +
-                           frustum[side][C] * frustum[side][C]);
-
-    frustum[side][A] /= magnitude;
-    frustum[side][B] /= magnitude;
-    frustum[side][C] /= magnitude;
-    frustum[side][D] /= magnitude;
-}
-
-void Frustum_calculate(Frustum* frustum) {
-    float proj[16];  // This will hold our projection matrix
-    float modl[16];  // This will hold our modelview matrix
-    float clip[16];  // This will hold the clipping planes
-
-    // glGetFloat() is used to extract information about our OpenGL world.
-    // Below, we pass in GL_PROJECTION_MATRIX to abstract our projection matrix.
-    // It then stores the matrix into an array of [16].
-    glGetFloatv(GL_PROJECTION_MATRIX, proj);
-
-    // By passing in GL_MODELVIEW_MATRIX, we can abstract our model view matrix.
-    // This also stores it in an array of [16].
-    glGetFloatv(GL_MODELVIEW_MATRIX, modl);
-
-    // Now that we have our modelview and projection matrix, if we combine these 2 matrices,
-    // it will give us our clipping planes.  To combine 2 matrices, we multiply them.
-
-    clip[0] = modl[0] * proj[0] + modl[1] * proj[4] + modl[2] * proj[8] + modl[3] * proj[12];
-    clip[1] = modl[0] * proj[1] + modl[1] * proj[5] + modl[2] * proj[9] + modl[3] * proj[13];
-    clip[2] = modl[0] * proj[2] + modl[1] * proj[6] + modl[2] * proj[10] + modl[3] * proj[14];
-    clip[3] = modl[0] * proj[3] + modl[1] * proj[7] + modl[2] * proj[11] + modl[3] * proj[15];
-
-    clip[4] = modl[4] * proj[0] + modl[5] * proj[4] + modl[6] * proj[8] + modl[7] * proj[12];
-    clip[5] = modl[4] * proj[1] + modl[5] * proj[5] + modl[6] * proj[9] + modl[7] * proj[13];
-    clip[6] = modl[4] * proj[2] + modl[5] * proj[6] + modl[6] * proj[10] + modl[7] * proj[14];
-    clip[7] = modl[4] * proj[3] + modl[5] * proj[7] + modl[6] * proj[11] + modl[7] * proj[15];
-
-    clip[8] = modl[8] * proj[0] + modl[9] * proj[4] + modl[10] * proj[8] + modl[11] * proj[12];
-    clip[9] = modl[8] * proj[1] + modl[9] * proj[5] + modl[10] * proj[9] + modl[11] * proj[13];
-    clip[10] = modl[8] * proj[2] + modl[9] * proj[6] + modl[10] * proj[10] + modl[11] * proj[14];
-    clip[11] = modl[8] * proj[3] + modl[9] * proj[7] + modl[10] * proj[11] + modl[11] * proj[15];
-
-    clip[12] = modl[12] * proj[0] + modl[13] * proj[4] + modl[14] * proj[8] + modl[15] * proj[12];
-    clip[13] = modl[12] * proj[1] + modl[13] * proj[5] + modl[14] * proj[9] + modl[15] * proj[13];
-    clip[14] = modl[12] * proj[2] + modl[13] * proj[6] + modl[14] * proj[10] + modl[15] * proj[14];
-    clip[15] = modl[12] * proj[3] + modl[13] * proj[7] + modl[14] * proj[11] + modl[15] * proj[15];
-
-    // Now we actually want to get the sides of the frustum. To do this, we take
-    // the clipping planes we received above and extract the sides from them.
-
-    // This will extract the RIGHT side of the frustum
-    frustum->m_Frustum[RIGHT][A] = clip[3] - clip[0];
-    frustum->m_Frustum[RIGHT][B] = clip[7] - clip[4];
-    frustum->m_Frustum[RIGHT][C] = clip[11] - clip[8];
-    frustum->m_Frustum[RIGHT][D] = clip[15] - clip[12];
-
-    // Normalize the RIGHT side
-    normalizePlane(frustum->m_Frustum, RIGHT);
-
-    // This will extract the LEFT side of the frustum
-    frustum->m_Frustum[LEFT][A] = clip[3] + clip[0];
-    frustum->m_Frustum[LEFT][B] = clip[7] + clip[4];
-    frustum->m_Frustum[LEFT][C] = clip[11] + clip[8];
-    frustum->m_Frustum[LEFT][D] = clip[15] + clip[12];
-
-    // Normalize the LEFT side
-    normalizePlane(frustum->m_Frustum, LEFT);
-
-    // This will extract the BOTTOM side of the frustum
-    frustum->m_Frustum[BOTTOM][A] = clip[3] + clip[1];
-    frustum->m_Frustum[BOTTOM][B] = clip[7] + clip[5];
-    frustum->m_Frustum[BOTTOM][C] = clip[11] + clip[9];
-    frustum->m_Frustum[BOTTOM][D] = clip[15] + clip[13];
-
-    // Normalize the BOTTOM side
-    normalizePlane(frustum->m_Frustum, BOTTOM);
-
-    // This will extract the TOP side of the frustum
-    frustum->m_Frustum[TOP][A] = clip[3] - clip[1];
-    frustum->m_Frustum[TOP][B] = clip[7] - clip[5];
-    frustum->m_Frustum[TOP][C] = clip[11] - clip[9];
-    frustum->m_Frustum[TOP][D] = clip[15] - clip[13];
-
-    // Normalize the TOP side
-    normalizePlane(frustum->m_Frustum, TOP);
-
-    // This will extract the BACK side of the frustum
-    frustum->m_Frustum[BACK][A] = clip[3] - clip[2];
-    frustum->m_Frustum[BACK][B] = clip[7] - clip[6];
-    frustum->m_Frustum[BACK][C] = clip[11] - clip[10];
-    frustum->m_Frustum[BACK][D] = clip[15] - clip[14];
-
-    // Normalize the BACK side
-    normalizePlane(frustum->m_Frustum, BACK);
-
-    // This will extract the FRONT side of the frustum
-    frustum->m_Frustum[FRONT][A] = clip[3] + clip[2];
-    frustum->m_Frustum[FRONT][B] = clip[7] + clip[6];
-    frustum->m_Frustum[FRONT][C] = clip[11] + clip[10];
-    frustum->m_Frustum[FRONT][D] = clip[15] + clip[14];
-
-    // Normalize the FRONT side
-    normalizePlane(frustum->m_Frustum, FRONT);
-}
-
-int Frustum_pointInFrustum(const Frustum* frustum, float x, float y, float z) {
-    for (int i = 0; i < 6; i++) {
-        if (frustum->m_Frustum[i][0] * x + frustum->m_Frustum[i][1] * y +
-            frustum->m_Frustum[i][2] * z + frustum->m_Frustum[i][3] <= 0) {
-            return 0; // Point is behind a side of the frustum
+int frustum_cubeIn(float x1, float y1, float z1, float x2, float y2, float z2) {
+    for (int i = 0; i < 6; ++i) {
+        if (frustum.m_Frustum[i][0] * x1 + frustum.m_Frustum[i][1] * y1 + frustum.m_Frustum[i][2] * z1 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x2 + frustum.m_Frustum[i][1] * y1 + frustum.m_Frustum[i][2] * z1 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x1 + frustum.m_Frustum[i][1] * y2 + frustum.m_Frustum[i][2] * z1 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x2 + frustum.m_Frustum[i][1] * y2 + frustum.m_Frustum[i][2] * z1 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x1 + frustum.m_Frustum[i][1] * y1 + frustum.m_Frustum[i][2] * z2 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x2 + frustum.m_Frustum[i][1] * y1 + frustum.m_Frustum[i][2] * z2 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x1 + frustum.m_Frustum[i][1] * y2 + frustum.m_Frustum[i][2] * z2 + frustum.m_Frustum[i][3] <= 0.0F && frustum.m_Frustum[i][0] * x2 + frustum.m_Frustum[i][1] * y2 + frustum.m_Frustum[i][2] * z2 + frustum.m_Frustum[i][3] <= 0.0F) {
+            return 0;
         }
-    }
-    return 1; // Point is inside the frustum
-}
-
-int Frustum_sphereInFrustum(const Frustum* frustum, float x, float y, float z, float radius) {
-    for (int i = 0; i < 6; i++) {
-        if (frustum->m_Frustum[i][0] * x + frustum->m_Frustum[i][1] * y +
-            frustum->m_Frustum[i][2] * z + frustum->m_Frustum[i][3] <= -radius) {
-            return 0; // Sphere is outside of the frustum
-        }
-    }
-    return 1; // Sphere is inside or intersecting the frustum
-}
-
-int Frustum_cubeInFrustum(Frustum* frustum, float minX, float minY, float minZ, float maxX, float maxY, float maxZ) {
-    for (int i = 0; i < 6; i++) {
-        if (frustum->m_Frustum[i][A] * minX + frustum->m_Frustum[i][B] * minY +
-                frustum->m_Frustum[i][C] * minZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * maxX + frustum->m_Frustum[i][B] * minY +
-                frustum->m_Frustum[i][C] * minZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * minX + frustum->m_Frustum[i][B] * maxY +
-                frustum->m_Frustum[i][C] * minZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * maxX + frustum->m_Frustum[i][B] * maxY +
-                frustum->m_Frustum[i][C] * minZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * minX + frustum->m_Frustum[i][B] * minY +
-                frustum->m_Frustum[i][C] * maxZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * maxX + frustum->m_Frustum[i][B] * minY +
-                frustum->m_Frustum[i][C] * maxZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * minX + frustum->m_Frustum[i][B] * maxY +
-                frustum->m_Frustum[i][C] * maxZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-        if (frustum->m_Frustum[i][A] * maxX + frustum->m_Frustum[i][B] * maxY +
-                frustum->m_Frustum[i][C] * maxZ + frustum->m_Frustum[i][D] > 0)
-            continue;
-
-        // If we get here, it isn't in the frustum
-        return 0;
     }
 
     return 1;
 }
 
-int Frustum_aabbInFrustum(Frustum* frustum, AABB* aabb) {
-    return Frustum_cubeInFrustum(frustum, (float)aabb->minX, (float)aabb->minY, (float)aabb->minZ,
-                                   (float)aabb->maxX, (float)aabb->maxY, (float)aabb->maxZ);
+int frustum_cubeInAABB(AABB* aabb) {
+    return frustum_cubeIn(aabb->minX, aabb->minY, aabb->minZ, aabb->maxX, aabb->maxY, aabb->maxZ);
 }

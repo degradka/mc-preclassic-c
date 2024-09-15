@@ -12,6 +12,11 @@ typedef struct {
     double maxZ;
 } AABB;
 
+typedef struct AABBArray {
+    AABB arr[32];
+    int size;
+} AABBArray;
+
 AABB AABB_create(double minX, double minY, double minZ, double maxX, double maxY, double maxZ);
 AABB AABB_clone(const AABB* aabb);
 AABB AABB_expand(const AABB* aabb, double x, double y, double z);
