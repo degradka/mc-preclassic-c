@@ -124,12 +124,12 @@ static void destroy(Level* lvl) {
 static void moveCameraToPlayer(Player* p, float t) {
     glTranslatef(0.0f, 0.0f, -0.3f); // eye offset
 
-    glRotatef(p->xRotation, 1.0f, 0.0f, 0.0f);
-    glRotatef(p->yRotation, 0.0f, 1.0f, 0.0f);
+    glRotatef(p->e.xRotation, 1.0f, 0.0f, 0.0f);
+    glRotatef(p->e.yRotation, 0.0f, 1.0f, 0.0f);
 
-    double x = p->prevX + (p->x - p->prevX) * t;
-    double y = p->prevY + (p->y - p->prevY) * t;
-    double z = p->prevZ + (p->z - p->prevZ) * t;
+    double x = p->e.prevX + (p->e.x - p->e.prevX) * t;
+    double y = p->e.prevY + (p->e.y - p->e.prevY) * t;
+    double z = p->e.prevZ + (p->e.z - p->e.prevZ) * t;
 
     glTranslated(-x, -y, -z);
 }
@@ -147,8 +147,8 @@ static void setupCamera(Player* p, float t) {
 /* --- picking ----------------------------------------------------------------- */
 
 static void get_look_dir(const Player* p, double* dx, double* dy, double* dz) {
-    const double yaw   = p->yRotation * M_PI / 180.0;
-    const double pitch = p->xRotation * M_PI / 180.0;
+    const double yaw   = p->e.yRotation * M_PI / 180.0;
+    const double pitch = p->e.xRotation * M_PI / 180.0;
     const double cp = cos(pitch), sp = sin(pitch);
     const double cy = cos(yaw),   sy = sin(yaw);
     *dx =  sy * cp;   // +X right
@@ -211,9 +211,9 @@ static int raycast_block(const Level* lvl,
 }
 
 static void pick(float t) {
-    double x = player.prevX + (player.x - player.prevX) * t;
-    double y = player.prevY + (player.y - player.prevY) * t;
-    double z = player.prevZ + (player.z - player.prevZ) * t;
+    double x = player.e.prevX + (player.e.x - player.e.prevX) * t;
+    double y = player.e.prevY + (player.e.y - player.e.prevY) * t;
+    double z = player.e.prevZ + (player.e.z - player.e.prevZ) * t;
 
     double dx, dy, dz;
     get_look_dir(&player, &dx, &dy, &dz);
@@ -225,9 +225,9 @@ static void pick(float t) {
 
     HitResult hr;
     if (raycast_block(&level, x, y, z, dx, dy, dz, 100.0, &hr)) {
-        int px = (int)floor(player.x);
-        int py = (int)floor(player.y);
-        int pz = (int)floor(player.z);
+        int px = (int)floor(player.e.x);
+        int py = (int)floor(player.e.y);
+        int pz = (int)floor(player.e.z);
         if (abs(hr.x - px) <= reachBlocks &&
             abs(hr.y - py) <= reachBlocks &&
             abs(hr.z - pz) <= reachBlocks) {

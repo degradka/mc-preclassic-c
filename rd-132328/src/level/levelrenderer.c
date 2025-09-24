@@ -10,7 +10,6 @@
 #include "frustum.h"
 #include "tile.h"
 #include "../timer.h"
-#include "../player.h"
 #include "../hitresult.h"
 #include <math.h>
 #include <stdio.h>

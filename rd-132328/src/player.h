@@ -1,32 +1,21 @@
-// player.h — movement, camera turn, collision
+// player.h — thin wrapper over Entity (room for player-specific stuff later)
 
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "common.h"
-
-#include "level/level.h"
-#include "phys/aabb.h"
-#include <math.h>
-#include <GLFW/glfw3.h>
-#include <stdbool.h>
+#include "entity.h"
 
 typedef struct Player {
-    Level* level;
-    float  x, y, z;
-    double prevX, prevY, prevZ;
-    double motionX, motionY, motionZ;
-    float  yRotation, xRotation;
-    bool   onGround;
-    AABB   boundingBox;
+    Entity e; // composition: Player “is” an Entity for now
 } Player;
 
-void Player_init(Player* player, Level* level);
-void Player_setPosition(Player* player, float x, float y, float z);
-void Player_resetPosition(Player* player);
-void Player_turn(Player* player, GLFWwindow* window, float x, float y);
-void Player_move(Player* player, double x, double y, double z);
-void Player_tick(Player* player, GLFWwindow* window);
-void Player_moveRelative(Player* player, float x, float y, float speed);
+/* Thin forwards so existing call sites can stay Player_* for now. */
+void Player_init(Player* p, Level* level);
+void Player_setPosition(Player* p, float x, float y, float z);
+void Player_resetPosition(Player* p);
+void Player_turn(Player* p, GLFWwindow* window, float dx, float dy);
+void Player_move(Player* p, double dx, double dy, double dz);
+void Player_tick(Player* p, GLFWwindow* window);
+void Player_moveRelative(Player* p, float x, float z, float speed);
 
 #endif  // PLAYER_H

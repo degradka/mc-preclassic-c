@@ -10,7 +10,7 @@ INCLUDE := -I.
 BUILD ?= debug
 
 # Sources / Objects
-SRC = rubydung.c player.c textures.c timer.c \
+SRC = rubydung.c player.c textures.c timer.c entity.c \
       level/chunk.c level/level.c level/levelrenderer.c \
       level/tessellator.c level/tile.c level/frustum.c \
       phys/aabb.c hitresult.c
