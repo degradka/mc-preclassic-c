@@ -9,7 +9,7 @@
 
 ## What the hell is this?
 This is me being insane enough to rewrite the very first public Minecraft version  
-— **rd-132211**, released May 2009 — in plain C.  
+**rd-132211**, released May 2009, in plain C.  
 
 Why? Because I can.  
 And because the original was Java, and I wanted to see how far I could push a C port.  
@@ -19,7 +19,7 @@ I kept file names and code organization close to the original repo:
 
 ---
 
-## Features (extra shit added on top of the original)
+## Features
 - Break and place tiles  
 - White flashing overlay on the block you’re aiming at  
 - Save the level by pressing **Enter**  
