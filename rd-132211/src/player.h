@@ -1,19 +1,24 @@
+// player.h — movement, camera turn, collision
+
 #ifndef PLAYER_H
 #define PLAYER_H
+
+#include "common.h"
 
 #include "level/level.h"
 #include "phys/aabb.h"
 #include <math.h>
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
 
-typedef struct {
+typedef struct Player {
     Level* level;
-    float x, y, z;
+    float  x, y, z;
     double prevX, prevY, prevZ;
     double motionX, motionY, motionZ;
-    float yRotation, xRotation;
-    bool onGround;
-    AABB boundingBox;
+    float  yRotation, xRotation;
+    bool   onGround;
+    AABB   boundingBox;
 } Player;
 
 void Player_init(Player* player, Level* level);

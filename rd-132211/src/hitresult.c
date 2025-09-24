@@ -1,11 +1,8 @@
+// hitresult.c — block raycast result
+
 #include "hitresult.h"
 
-#include <stdlib.h>
-
-void hitresult_create(HitResult* hitResult, int x, int y, int z, int o, int f) {
-    hitResult->x = x;
-    hitResult->y = y;
-    hitResult->z = z;
-    hitResult->o = o;
-    hitResult->f = f;
+void hitresult_create(HitResult* h, int x, int y, int z, int o, int f) {
+    h->x = x; h->y = y; h->z = z;
+    h->o = o; h->f = f;
 }

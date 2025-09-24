@@ -1,39 +1,32 @@
+// tessellator.h — client-side batched immediate-mode for quads
+
 #ifndef TESSELLATOR_H
 #define TESSELLATOR_H
 
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
-
 #include <stdbool.h>
 
 #define MAX_VERTICES 100000
 
 typedef struct {
     float vertexBuffer[MAX_VERTICES * 3];
-    float textureCoordinateBuffer[MAX_VERTICES * 2];
-    float colorBuffer[MAX_VERTICES * 3];
+    float texBuffer   [MAX_VERTICES * 2];
+    float colorBuffer [MAX_VERTICES * 3];
 
-    int vertices;
+    int   vertices;
 
-    // Texture
-    int hasTexture;
-    float textureU;
-    float textureV;
-
-    // Color
-    bool hasColor;
-    float red;
-    float green;
-    float blue;
+    // current attribs
+    int   hasTexture; float u, v;
+    int   hasColor;   float r, g, b;
 } Tessellator;
 
 extern Tessellator TESSELLATOR;
 
-void Tessellator_init(Tessellator* tessellator);
-void Tessellator_vertex(Tessellator* tessellator, float x, float y, float z);
-void Tessellator_texture(Tessellator* tessellator, float textureU, float textureV);
-void Tessellator_color(Tessellator* tessellator, float red, float green, float blue);
-void Tessellator_flush(Tessellator* tessellator);
-void Tessellator_clear(Tessellator* tessellator);
+void Tessellator_init   (Tessellator* t);
+void Tessellator_vertex (Tessellator* t, float x, float y, float z);
+void Tessellator_texture(Tessellator* t, float u, float v);
+void Tessellator_color  (Tessellator* t, float r, float g, float b);
+void Tessellator_flush  (Tessellator* t);
+void Tessellator_clear  (Tessellator* t);
 
 #endif  // TESSELLATOR_H

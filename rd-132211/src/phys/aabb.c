@@ -1,161 +1,91 @@
-// aabb.c
+// phys/aabb.c — axis-aligned bounding boxes & collision helpers
 
 #include "aabb.h"
 
 AABB AABB_create(double minX, double minY, double minZ, double maxX, double maxY, double maxZ) {
     AABB aabb;
-    aabb.minX = minX;
-    aabb.minY = minY;
-    aabb.minZ = minZ;
-    aabb.maxX = maxX;
-    aabb.maxY = maxY;
-    aabb.maxZ = maxZ;
+    aabb.minX = minX; aabb.minY = minY; aabb.minZ = minZ;
+    aabb.maxX = maxX; aabb.maxY = maxY; aabb.maxZ = maxZ;
     return aabb;
 }
 
-AABB AABB_clone(const AABB* aabb) {
-    return AABB_create(aabb->minX, aabb->minY, aabb->minZ, aabb->maxX, aabb->maxY, aabb->maxZ);
+AABB AABB_clone(const AABB* a) {
+    return AABB_create(a->minX, a->minY, a->minZ, a->maxX, a->maxY, a->maxZ);
 }
 
-AABB AABB_expand(const AABB* aabb, double x, double y, double z) {
-    double minX = aabb->minX;
-    double minY = aabb->minY;
-    double minZ = aabb->minZ;
-    double maxX = aabb->maxX;
-    double maxY = aabb->maxY;
-    double maxZ = aabb->maxZ;
+AABB AABB_expand(const AABB* a, double x, double y, double z) {
+    double minX = a->minX, minY = a->minY, minZ = a->minZ;
+    double maxX = a->maxX, maxY = a->maxY, maxZ = a->maxZ;
 
-    // Handle expanding of min/max x
-    if (x < 0.0) {
-        minX += x;
-    } else {
-        maxX += x;
-    }
+    if (x < 0.0) minX += x; else maxX += x;
+    if (y < 0.0) minY += y; else maxY += y;
+    if (z < 0.0) minZ += z; else maxZ += z;
 
-    // Handle expanding of min/max y
-    if (y < 0.0) {
-        minY += y;
-    } else {
-        maxY += y;
-    }
-
-    // Handle expanding of min/max z
-    if (z < 0.0) {
-        minZ += z;
-    } else {
-        maxZ += z;
-    }
-
-    // Create new bounding box
     return AABB_create(minX, minY, minZ, maxX, maxY, maxZ);
 }
 
-AABB AABB_grow(const AABB* aabb, double x, double y, double z) {
-    return AABB_create(aabb->minX - x, aabb->minY - y, aabb->minZ - z, aabb->maxX + x, aabb->maxY + y, aabb->maxZ + z);
+AABB AABB_grow(const AABB* a, double x, double y, double z) {
+    return AABB_create(a->minX - x, a->minY - y, a->minZ - z,
+                       a->maxX + x, a->maxY + y, a->maxZ + z);
 }
 
-double AABB_clipXCollide(const AABB* aabb, const AABB* other, double x) {
-    // Check if the boxes are colliding on the Y axis
-    if (other->maxY <= aabb->minY || other->minY >= aabb->maxY) {
-        return x;
-    }
+double AABB_clipXCollide(const AABB* a, const AABB* b, double x) {
+    if (b->maxY <= a->minY || b->minY >= a->maxY) return x;
+    if (b->maxZ <= a->minZ || b->minZ >= a->maxZ) return x;
 
-    // Check if the boxes are colliding on the Z axis
-    if (other->maxZ <= aabb->minZ || other->minZ >= aabb->maxZ) {
-        return x;
+    if (x > 0.0 && b->maxX <= a->minX) {
+        double d = a->minX - b->maxX;
+        return (d < x) ? d : x;
     }
-
-    // Check for collision if the X axis of the current box is bigger
-    if (x > 0.0 && other->maxX <= aabb->minX) {
-        double max = aabb->minX - other->maxX;
-        return (max < x) ? max : x;
+    if (x < 0.0 && b->minX >= a->maxX) {
+        double d = a->maxX - b->minX;
+        return (d > x) ? d : x;
     }
-
-    // Check for collision if the X axis of the current box is smaller
-    if (x < 0.0 && other->minX >= aabb->maxX) {
-        double max = aabb->maxX - other->minX;
-        return (max > x) ? max : x;
-    }
-
     return x;
 }
 
-double AABB_clipYCollide(const AABB* aabb, const AABB* other, double y) {
-    // Check if the boxes are colliding on the X axis
-    if (other->maxX <= aabb->minX || other->minX >= aabb->maxX) {
-        return y;
-    }
+double AABB_clipYCollide(const AABB* a, const AABB* b, double y) {
+    if (b->maxX <= a->minX || b->minX >= a->maxX) return y;
+    if (b->maxZ <= a->minZ || b->minZ >= a->maxZ) return y;
 
-    // Check if the boxes are colliding on the Z axis
-    if (other->maxZ <= aabb->minZ || other->minZ >= aabb->maxZ) {
-        return y;
+    if (y > 0.0 && b->maxY <= a->minY) {
+        double d = a->minY - b->maxY;
+        return (d < y) ? d : y;
     }
-
-    // Check for collision if the Y axis of the current box is bigger
-    if (y > 0.0 && other->maxY <= aabb->minY) {
-        double max = aabb->minY - other->maxY;
-        return (max < y) ? max : y;
+    if (y < 0.0 && b->minY >= a->maxY) {
+        double d = a->maxY - b->minY;
+        return (d > y) ? d : y;
     }
-
-    // Check for collision if the Y axis of the current box is smaller
-    if (y < 0.0 && other->minY >= aabb->maxY) {
-        double max = aabb->maxY - other->minY;
-        return (max > y) ? max : y;
-    }
-
     return y;
 }
 
-double AABB_clipZCollide(const AABB* aabb, const AABB* other, double z) {
-    // Check if the boxes are colliding on the X axis
-    if (other->maxX <= aabb->minX || other->minX >= aabb->maxX) {
-        return z;
-    }
+double AABB_clipZCollide(const AABB* a, const AABB* b, double z) {
+    if (b->maxX <= a->minX || b->minX >= a->maxX) return z;
+    if (b->maxY <= a->minY || b->minY >= a->maxY) return z;
 
-    // Check if the boxes are colliding on the Y axis
-    if (other->maxY <= aabb->minY || other->minY >= aabb->maxY) {
-        return z;
+    if (z > 0.0 && b->maxZ <= a->minZ) {
+        double d = a->minZ - b->maxZ;
+        return (d < z) ? d : z;
     }
-
-    // Check for collision if the Z axis of the current box is bigger
-    if (z > 0.0 && other->maxZ <= aabb->minZ) {
-        double max = aabb->minZ - other->maxZ;
-        return (max < z) ? max : z;
+    if (z < 0.0 && b->minZ >= a->maxZ) {
+        double d = a->maxZ - b->minZ;
+        return (d > z) ? d : z;
     }
-
-    // Check for collision if the Z axis of the current box is smaller
-    if (z < 0.0 && other->minZ >= aabb->maxZ) {
-        double max = aabb->maxZ - other->minZ;
-        return (max > z) ? max : z;
-    }
-
     return z;
 }
 
-int AABB_intersects(const AABB* aabb, const AABB* other) {
-    // Check on X axis
-    if (other->maxX <= aabb->minX || other->minX >= aabb->maxX) {
-        return 0;
-    }
-
-    // Check on Y axis
-    if (other->maxY <= aabb->minY || other->minY >= aabb->maxY) {
-        return 0;
-    }
-
-    // Check on Z axis
-    return (other->maxZ > aabb->minZ) && (other->minZ < aabb->maxZ);
+int AABB_intersects(const AABB* a, const AABB* b) {
+    if (b->maxX <= a->minX || b->minX >= a->maxX) return 0;
+    if (b->maxY <= a->minY || b->minY >= a->maxY) return 0;
+    return (b->maxZ > a->minZ) && (b->minZ < a->maxZ);
 }
 
-void AABB_move(AABB* aabb, double x, double y, double z) {
-    aabb->minX += x;
-    aabb->minY += y;
-    aabb->minZ += z;
-    aabb->maxX += x;
-    aabb->maxY += y;
-    aabb->maxZ += z;
+void AABB_move(AABB* a, double x, double y, double z) {
+    a->minX += x; a->minY += y; a->minZ += z;
+    a->maxX += x; a->maxY += y; a->maxZ += z;
 }
 
-AABB AABB_offset(const AABB* aabb, double x, double y, double z) {
-    return AABB_create(aabb->minX + x, aabb->minY + y, aabb->minZ + z, aabb->maxX + x, aabb->maxY + y, aabb->maxZ + z);
+AABB AABB_offset(const AABB* a, double x, double y, double z) {
+    return AABB_create(a->minX + x, a->minY + y, a->minZ + z,
+                       a->maxX + x, a->maxY + y, a->maxZ + z);
 }

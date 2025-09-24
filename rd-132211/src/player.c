@@ -1,11 +1,10 @@
+// player.c — movement, camera turn, collision
+
 #include "player.h"
 
-#define degToRad(angleInDegrees) ((angleInDegrees) * M_PI / 180.0)
-#define radToDeg(angleInRadians) ((angleInRadians) * 180.0 / M_PI)
-
-// Pitch limit
-const float maxPitch = 90.0F;
-const float minPitch = -90.0F;
+#define degToRad(d) ((d) * M_PI / 180.0)
+#define maxPitch  90.0f
+#define minPitch -90.0f
 
 void Player_init(Player* player, Level* level) {
     player->level = level;
@@ -13,144 +12,103 @@ void Player_init(Player* player, Level* level) {
 }
 
 void Player_setPosition(Player* player, float x, float y, float z) {
-    player->x = x;
-    player->y = y;
-    player->z = z;
-    float width = 0.3F;
-    float height = 0.9F;
-    player->boundingBox = AABB_create(x - width, y - height, z - width, x + width, y + height, z + width);
+    player->x = x; player->y = y; player->z = z;
+
+    const float w = 0.3f, h = 0.9f;
+    player->boundingBox = AABB_create(x - w, y - h, z - w, x + w, y + h, z + w);
+
+    player->prevX = x; player->prevY = y; player->prevZ = z;
+    player->motionX = player->motionY = player->motionZ = 0.0;
 }
 
 void Player_resetPosition(Player* player) {
-    float x = (float) rand() / RAND_MAX * player->level->width;
-    float y = (float) (player->level->depth) + 3;
-    float z = (float) rand() / RAND_MAX * player->level->height;
-
+    float x = (float) rand() / (float)RAND_MAX * player->level->width;
+    float y = (float) player->level->depth + 3.0f;
+    float z = (float) rand() / (float)RAND_MAX * player->level->height;
     Player_setPosition(player, x, y, z);
 }
 
-void Player_turn(Player* player, GLFWwindow* window, float x, float y) {
-    player->yRotation += x * 0.15F;
-    player->xRotation -= y * 0.15F;
+void Player_turn(Player* player, GLFWwindow* window, float dx, float dy) {
+    player->yRotation += dx * 0.15f;
+    player->xRotation -= dy * 0.15f;
 
     if (player->xRotation > maxPitch) player->xRotation = maxPitch;
     if (player->xRotation < minPitch) player->xRotation = minPitch;
 
-    // Reset mouse motion after using it
+    // consume mouse deltas by resetting cursor to the origin each frame
     glfwSetCursorPos(window, 0, 0);
 }
 
-void Player_move(Player* player, double x, double y, double z) {
-    double prevX = x;
-    double prevY = y;
-    double prevZ = z;
+void Player_move(Player* player, double dx, double dy, double dz) {
+    const double ox = dx, oy = dy, oz = dz;
 
-    // Get surrounded tiles
-    ArrayList_AABB aABBs = Level_getCubes(player->level, &player->boundingBox);
+    ArrayList_AABB hits = Level_getCubes(player->level, &player->boundingBox);
 
-    // Check for Y collision
-    for (int i = 0; i < aABBs.size; i++) {
-        y = AABB_clipYCollide(&aABBs.aabbs[i], &player->boundingBox, y);
-    }
-    AABB_move(&player->boundingBox, 0.0F, y, 0.0F);
+    for (int i = 0; i < hits.size; i++) dy = AABB_clipYCollide(&hits.aabbs[i], &player->boundingBox, dy);
+    AABB_move(&player->boundingBox, 0.0, dy, 0.0);
 
-    // Check for X collision
-    for (int i = 0; i < aABBs.size; i++) {
-        x = AABB_clipXCollide(&aABBs.aabbs[i], &player->boundingBox, x);
-    }
-    AABB_move(&player->boundingBox, x, 0.0F, 0.0F);
+    for (int i = 0; i < hits.size; i++) dx = AABB_clipXCollide(&hits.aabbs[i], &player->boundingBox, dx);
+    AABB_move(&player->boundingBox, dx, 0.0, 0.0);
 
-    // Check for Z collision
-    for (int i = 0; i < aABBs.size; i++) {
-        z = AABB_clipZCollide(&aABBs.aabbs[i], &player->boundingBox, z);
-    }
-    AABB_move(&player->boundingBox, 0.0F, 0.0F, z);
+    for (int i = 0; i < hits.size; i++) dz = AABB_clipZCollide(&hits.aabbs[i], &player->boundingBox, dz);
+    AABB_move(&player->boundingBox, 0.0, 0.0, dz);
 
-    // Update on ground state
-    player->onGround = prevY != y && prevY < 0.0F;
+    player->onGround = (oy != dy) && (oy < 0.0);
 
-    // Stop motion on collision
-    if (prevX != x) player->motionX = 0.0;
-    if (prevY != y) player->motionY = 0.0;
-    if (prevZ != z) player->motionZ = 0.0;
+    if (ox != dx) player->motionX = 0.0;
+    if (oy != dy) player->motionY = 0.0;
+    if (oz != dz) player->motionZ = 0.0;
 
-    // Move the actual player position
-    player->x = (player->boundingBox.minX + player->boundingBox.maxX) / 2.0;
-    player->y = player->boundingBox.minY + 1.62F;
-    player->z = (player->boundingBox.minZ + player->boundingBox.maxZ) / 2.0;
+    player->x = (player->boundingBox.minX + player->boundingBox.maxX) * 0.5;
+    player->y =  player->boundingBox.minY + 1.62f;
+    player->z = (player->boundingBox.minZ + player->boundingBox.maxZ) * 0.5;
 }
 
 void Player_tick(Player* player, GLFWwindow* window) {
-    // Store previous position
     player->prevX = player->x;
     player->prevY = player->y;
     player->prevZ = player->z;
 
-    float forward = 0.0F;
-    float vertical = 0.0F;
+    float fwd = 0.0f, strafe = 0.0f;
 
-    // Player movement using GLFW
     if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
         Player_resetPosition(player);
     }
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_UP)    == GLFW_PRESS) fwd   -= 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_DOWN)  == GLFW_PRESS) fwd   += 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_LEFT)  == GLFW_PRESS) strafe-= 1.0f;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) strafe+= 1.0f;
 
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        forward--;
-    }
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        forward++;
-    }
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        vertical--;
-    }
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        vertical++;
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        if (player->onGround) {
-            player->motionY = 0.12F;
-        }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && player->onGround) {
+        player->motionY = 0.12f;
     }
 
-    // Add motion to the player using keyboard input
-    Player_moveRelative(player, vertical, forward, player->onGround ? 0.02F : 0.005F);
+    Player_moveRelative(player, strafe, fwd, player->onGround ? 0.02f : 0.005f);
 
-    // Apply gravity
-    player->motionY -= 0.005;
+    player->motionY -= 0.005; // gravity
 
-    // Move the player using the motion
     Player_move(player, player->motionX, player->motionY, player->motionZ);
-    
-    // Decrease motion
-    player->motionX *= 0.91F;
-    player->motionY *= 0.98F;
-    player->motionZ *= 0.91F;
 
-    // Decrease motion on ground
+    player->motionX *= 0.91f;
+    player->motionY *= 0.98f;
+    player->motionZ *= 0.91f;
+
     if (player->onGround) {
-        player->motionX *= 0.8F;
-        player->motionZ *= 0.8F;
+        player->motionX *= 0.8f;
+        player->motionZ *= 0.8f;
     }
 }
 
 void Player_moveRelative(Player* player, float x, float z, float speed) {
-    float distance = x * x + z * z;
+    float d2 = x*x + z*z;
+    if (d2 < 0.01f) return;
 
-    // Stop moving if too slow
-    if (distance < 0.01F) {
-        return;
-    }
+    const double s = sin(degToRad(player->yRotation));
+    const double c = cos(degToRad(player->yRotation));
 
-    // Calculate sin and cos of player rotation only once
-    double sin_val = sin(degToRad(player->yRotation));
-    double cos_val = cos(degToRad(player->yRotation));
+    float k = speed / sqrtf(d2);
+    x *= k; z *= k;
 
-    // Apply speed to relative movement
-    float factor = speed / sqrtf(distance);
-    x *= factor;
-    z *= factor;
-
-    // Move the player in the facing direction
-    player->motionX += x * cos_val - z * sin_val;
-    player->motionZ += z * cos_val + x * sin_val;
+    player->motionX += x * c - z * s;
+    player->motionZ += z * c + x * s;
 }

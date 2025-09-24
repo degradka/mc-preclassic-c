@@ -1,173 +1,119 @@
-#include <stdio.h>
+// levelrenderer.c — chunk grid, frustum culling, dirty-marking, and hit highlight
+
+#include <GL/glew.h>
+#include <GL/glu.h>
+#include <GLFW/glfw3.h>
 
 #include "levelrenderer.h"
+#include "level.h"
+#include "chunk.h"
 #include "frustum.h"
-#include "../timer.h"
 #include "tile.h"
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#include "../timer.h"
+#include "../player.h"
+#include "../hitresult.h"
+#include <math.h>
+#include <stdio.h>
 
-void LevelRenderer_init(LevelRenderer* renderer, Level* level) {
-    // Calculate amount of chunks in the level
-    renderer->chunkAmountX = level->width / CHUNK_SIZE;
-    renderer->chunkAmountY = level->depth / CHUNK_SIZE;
-    renderer->chunkAmountZ = level->height / CHUNK_SIZE;
-    level->renderer = &renderer;
+void LevelRenderer_init(LevelRenderer* r, Level* level) {
+    r->chunkAmountX = level->width  / CHUNK_SIZE;
+    r->chunkAmountY = level->depth  / CHUNK_SIZE;
+    r->chunkAmountZ = level->height / CHUNK_SIZE;
+    level->renderer = r;
 
-    // Create the chunk array
-    renderer->chunks = (Chunk*)malloc(renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ * sizeof(Chunk));
-    if (!renderer->chunks) {
-        fprintf(stderr, "Failed to allocate memory for chunks\n");
-        exit(EXIT_FAILURE);
-    }
+    int total = r->chunkAmountX * r->chunkAmountY * r->chunkAmountZ;
+    r->chunks = (Chunk*)malloc((size_t)total * sizeof(Chunk));
+    if (!r->chunks) { fprintf(stderr, "Failed to allocate chunks\n"); exit(EXIT_FAILURE); }
 
-    Tessellator_init(&renderer->tessellator);
+    Tessellator_init(&r->tessellator);
 
-    // Fill the level with chunks
-    for (int x = 0; x < renderer->chunkAmountX; x++) {
-        for (int y = 0; y < renderer->chunkAmountY; y++) {
-            for (int z = 0; z < renderer->chunkAmountZ; z++) {
-                // Calculate min bounds for the chunk
-                int minChunkX = x * CHUNK_SIZE;
-                int minChunkY = y * CHUNK_SIZE;
-                int minChunkZ = z * CHUNK_SIZE;
-
-                // Calculate max bounds for the chunk
-                int maxChunkX = (x + 1) * CHUNK_SIZE;
-                int maxChunkY = (y + 1) * CHUNK_SIZE;
-                int maxChunkZ = (z + 1) * CHUNK_SIZE;
-
-                // Check for chunk bounds out of level
-                maxChunkX = MIN(level->width, maxChunkX);
-                maxChunkY = MIN(level->depth, maxChunkY);
-                maxChunkZ = MIN(level->height, maxChunkZ);
-
-                // Create chunk based on bounds
-                Chunk_init(&renderer->chunks[(x + y * renderer->chunkAmountX) * renderer->chunkAmountZ + z],
-                           level, minChunkX, minChunkY, minChunkZ, maxChunkX, maxChunkY, maxChunkZ);
-            }
-        }
+    for (int x = 0; x < r->chunkAmountX; x++)
+    for (int y = 0; y < r->chunkAmountY; y++)
+    for (int z = 0; z < r->chunkAmountZ; z++) {
+        int minChunkX = x * CHUNK_SIZE, maxChunkX = MIN(level->width,  (x + 1) * CHUNK_SIZE);
+        int minChunkY = y * CHUNK_SIZE, maxChunkY = MIN(level->depth,  (y + 1) * CHUNK_SIZE);
+        int minChunkZ = z * CHUNK_SIZE, maxChunkZ = MIN(level->height, (z + 1) * CHUNK_SIZE);
+        Chunk_init(&r->chunks[(x + y * r->chunkAmountX) * r->chunkAmountZ + z],
+                   level, minChunkX, minChunkY, minChunkZ, maxChunkX, maxChunkY, maxChunkZ);
     }
 }
 
-void LevelRenderer_render(const LevelRenderer* renderer, int layer) {
-    // Reset global chunk rebuild stats
-    renderer->chunks->rebuiltThisFrame = 0;
+void LevelRenderer_render(const LevelRenderer* r, int layer) {
+    extern int CHUNK_RebuiltThisFrame;
+    CHUNK_RebuiltThisFrame = 0;
 
     frustum_calculate();
 
-    for (int i = 0; i < renderer->chunkAmountX * renderer->chunkAmountY * renderer->chunkAmountZ; ++i) {
-        // Render if bounding box of chunk is in frustum
-        if (frustum_cubeInAABB(&renderer->chunks[i].boundingBox)) {
-            // Render chunk
-            Chunk_render(&renderer->chunks[i], layer);
+    int total = r->chunkAmountX * r->chunkAmountY * r->chunkAmountZ;
+    for (int i = 0; i < total; ++i) {
+        if (frustum_cubeInAABB(&r->chunks[i].boundingBox)) {
+            Chunk_render(&r->chunks[i], layer);
         }
     }
 }
 
-void LevelRenderer_destroy(LevelRenderer* renderer) {
-    free(renderer->chunks);
+void LevelRenderer_destroy(LevelRenderer* r) {
+    free(r->chunks);
 }
 
-void LevelRenderer_renderPick(Level* level, LevelRenderer* renderer) {
-    float r = 3.0f;
-    AABB* boundingBox;
-    AABB_grow(boundingBox, r, r, r);
-    int minX = boundingBox->minX;
-    int maxX = boundingBox->maxX + 1.0f;
-    int minY = boundingBox->minY;
-    int maxY = boundingBox->maxY + 1.0f;
-    int minZ = boundingBox->minZ;
-    int maxZ = boundingBox->maxZ + 1.0f;
-    glInitNames();
+static void draw_face_immediate(int x, int y, int z, int face) {
+    float minX = (float)x,     maxX = (float)x + 1.0f;
+    float minY = (float)y,     maxY = (float)y + 1.0f;
+    float minZ = (float)z,     maxZ = (float)z + 1.0f;
 
-    for (int x = minX; x < maxX; x++) {
-        glPushName(x);
-        for (int y = minY; y < maxY; y++) {
-            glPushName(y);
-            for (int z = minZ; z < maxZ; z++) {
-                glPushName(z);
-                if (Level_isTile(level, x, y, z)) {
-                    glPushName(0);
-
-                    for (int i = 0; i < 6; i++) {
-                        glPushName(i);
-                        Tessellator_init(&renderer->tessellator);
-                        Face_render(&renderer->tessellator, x, y, z, i);
-                        Tessellator_flush(&renderer->tessellator);
-                        glPopName();
-                    }
-                    glPopName();
-                }
-                glPopName();
-            }
-            glPopName();
-        }
-        glPopName();
+    glBegin(GL_QUADS);
+    switch (face) {
+        case 0: glVertex3f(minX,minY,maxZ); glVertex3f(minX,minY,minZ); glVertex3f(maxX,minY,minZ); glVertex3f(maxX,minY,maxZ); break; // bottom
+        case 1: glVertex3f(maxX,maxY,maxZ); glVertex3f(maxX,maxY,minZ); glVertex3f(minX,maxY,minZ); glVertex3f(minX,maxY,maxZ); break; // top
+        case 2: glVertex3f(minX,maxY,minZ); glVertex3f(maxX,maxY,minZ); glVertex3f(maxX,minY,minZ); glVertex3f(minX,minY,minZ); break; // -Z
+        case 3: glVertex3f(minX,maxY,maxZ); glVertex3f(minX,minY,maxZ); glVertex3f(maxX,minY,maxZ); glVertex3f(maxX,maxY,maxZ); break; // +Z
+        case 4: glVertex3f(minX,maxY,maxZ); glVertex3f(minX,maxY,minZ); glVertex3f(minX,minY,minZ); glVertex3f(minX,minY,maxZ); break; // -X
+        case 5: glVertex3f(maxX,minY,maxZ); glVertex3f(maxX,minY,minZ); glVertex3f(maxX,maxY,minZ); glVertex3f(maxX,maxY,maxZ); break; // +X
     }
+    glEnd();
 }
 
-void LevelRenderer_renderHit(LevelRenderer* renderer, HitResult* h) {
+void LevelRenderer_renderHit(LevelRenderer* r, HitResult* h) {
+    (void)r;
+    if (!h) return;
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+    float a = (float)sin((double)currentTimeMillis() / 100.0) * 0.2f + 0.4f;
+    glColor4f(1.f, 1.f, 1.f, a);
 
-    glColor4f(1.0f, 1.0f, 1.0f, (float)sin((double)currentTimeMillis() / 100.0) * 0.2f + 0.4f);
-    Tessellator_init(&renderer->tessellator);
-    Face_render(&renderer->tessellator, h->x, h->y, h->z, h->f);
-    Tessellator_flush(&renderer->tessellator);
+    draw_face_immediate(h->x, h->y, h->z, h->f);
+
     glDisable(GL_BLEND);
-
 }
 
-void LevelRenderer_setDirty(const LevelRenderer* renderer, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-    // To chunk coordinates
-    minX /= CHUNK_SIZE;
-    minY /= CHUNK_SIZE;
-    minZ /= CHUNK_SIZE;
-    maxX /= CHUNK_SIZE;
-    maxY /= CHUNK_SIZE;
-    maxZ /= CHUNK_SIZE;
+void LevelRenderer_setDirty(const LevelRenderer* r, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    minX /= CHUNK_SIZE; minY /= CHUNK_SIZE; minZ /= CHUNK_SIZE;
+    maxX /= CHUNK_SIZE; maxY /= CHUNK_SIZE; maxZ /= CHUNK_SIZE;
 
-    // Minimum limit
-    if (minX < 0) {
-        minX = 0;
-    }
-    if (minY < 0) {
-        minY = 0;
-    }
-    if (minZ < 0) {
-        minZ = 0;
-    }
+    if (minX < 0) minX = 0;
+    if (minY < 0) minY = 0;
+    if (minZ < 0) minZ = 0;
 
-    // Maximum limit
-    if (maxX >= renderer->chunkAmountX) {
-        maxX = renderer->chunkAmountX - 1;
-    }
-    if (maxY >= renderer->chunkAmountY) {
-        maxY = renderer->chunkAmountY - 1;
-    }
-    if (maxZ >= renderer->chunkAmountZ) {
-        maxZ = renderer->chunkAmountZ - 1;
-    }
+    if (maxX >= r->chunkAmountX) maxX = r->chunkAmountX - 1;
+    if (maxY >= r->chunkAmountY) maxY = r->chunkAmountY - 1;
+    if (maxZ >= r->chunkAmountZ) maxZ = r->chunkAmountZ - 1;
 
-    // Mark all chunks as dirty
-    for (int x = minX; x <= maxX; ++x) {
-        for (int y = minY; y <= maxY; ++y) {
-            for (int z = minZ; z <= maxZ; ++z) {
-                // Get chunk at this position
-                Chunk_setDirty(&renderer->chunks[(x + y * renderer->chunkAmountX) * renderer->chunkAmountZ + z]);
-            }
-        }
+    for (int x = minX; x <= maxX; ++x)
+    for (int y = minY; y <= maxY; ++y)
+    for (int z = minZ; z <= maxZ; ++z) {
+        Chunk_setDirty(&r->chunks[(x + y * r->chunkAmountX) * r->chunkAmountZ + z]);
     }
 }
 
-void levelRenderer_tileChanged(LevelRenderer* renderer, int x, int y, int z) {
-    LevelRenderer_setDirty(renderer, x - 1, y - 1, z - 1, x + 1, y + 1, z + 1);
+void levelRenderer_tileChanged(LevelRenderer* r, int x, int y, int z) {
+    LevelRenderer_setDirty(r, x - 1, y - 1, z - 1, x + 1, y + 1, z + 1);
 }
 
-void levelRenderer_lightColumnChanged(LevelRenderer* renderer, int x, int z, int minY, int maxY) {
-    LevelRenderer_setDirty(renderer, x - 1, minY - 1, z - 1, x + 1, maxY + 1, z + 1);
+void levelRenderer_lightColumnChanged(LevelRenderer* r, int x, int z, int minY, int maxY) {
+    LevelRenderer_setDirty(r, x - 1, minY - 1, z - 1, x + 1, maxY + 1, z + 1);
 }
 
-void levelRenderer_allChanged(Level* level, LevelRenderer* renderer) {
-    LevelRenderer_setDirty(renderer, 0, 0, 0, level->width, level->depth, level->height);
+void levelRenderer_allChanged(Level* level, LevelRenderer* r) {
+    LevelRenderer_setDirty(r, 0, 0, 0, level->width, level->depth, level->height);
 }

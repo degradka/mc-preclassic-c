@@ -1,78 +1,66 @@
-#include <string.h>
+// tessellator.c — client-side batched immediate-mode for quads
 
+#include <string.h>
 #include "tessellator.h"
 
 Tessellator TESSELLATOR;
 
-void Tessellator_init(Tessellator* tessellator) {
-    Tessellator_clear(tessellator);
+void Tessellator_init(Tessellator* t) {
+    Tessellator_clear(t);
 }
 
-void Tessellator_vertex(Tessellator* tessellator, float x, float y, float z) {
-    // Vertex
-    tessellator->vertexBuffer[tessellator->vertices * 3] = x;
-    tessellator->vertexBuffer[tessellator->vertices * 3 + 1] = y;
-    tessellator->vertexBuffer[tessellator->vertices * 3 + 2] = z;
+void Tessellator_vertex(Tessellator* t, float x, float y, float z) {
+    t->vertexBuffer[t->vertices * 3 + 0] = x;
+    t->vertexBuffer[t->vertices * 3 + 1] = y;
+    t->vertexBuffer[t->vertices * 3 + 2] = z;
 
-    // Texture coordinates
-    if (tessellator->hasTexture) {
-        tessellator->textureCoordinateBuffer[tessellator->vertices * 2] = tessellator->textureU;
-        tessellator->textureCoordinateBuffer[tessellator->vertices * 2 + 1] = tessellator->textureV;
+    if (t->hasTexture) {
+        t->texBuffer[t->vertices * 2 + 0] = t->u;
+        t->texBuffer[t->vertices * 2 + 1] = t->v;
+    }
+    if (t->hasColor) {
+        t->colorBuffer[t->vertices * 3 + 0] = t->r;
+        t->colorBuffer[t->vertices * 3 + 1] = t->g;
+        t->colorBuffer[t->vertices * 3 + 2] = t->b;
     }
 
-    if (tessellator->hasColor) {
-        tessellator->colorBuffer[tessellator->vertices * 3] = tessellator->red;
-        tessellator->colorBuffer[tessellator->vertices * 3 + 1] = tessellator->green;
-        tessellator->colorBuffer[tessellator->vertices * 3 + 2] = tessellator->blue;
-    }
-
-    tessellator->vertices++;
-
-    // Flush if there are too many vertices in the buffer
-    if (tessellator->vertices == MAX_VERTICES) {
-        Tessellator_flush(tessellator);
+    t->vertices++;
+    if (t->vertices == MAX_VERTICES) {
+        Tessellator_flush(t);
     }
 }
 
-void Tessellator_texture(Tessellator* tessellator, float textureU, float textureV) {
-    tessellator->hasTexture = 1;
-    tessellator->textureU = textureU;
-    tessellator->textureV = textureV;
+void Tessellator_texture(Tessellator* t, float u, float v) {
+    t->hasTexture = 1;
+    t->u = u; t->v = v;
 }
 
-void Tessellator_color(Tessellator* tessellator, float red, float green, float blue) {
-    tessellator->hasColor = 1;
-    tessellator->red = red;
-    tessellator->green = green;
-    tessellator->blue = blue;
+void Tessellator_color(Tessellator* t, float r, float g, float b) {
+    t->hasColor = 1;
+    t->r = r; t->g = g; t->b = b;
 }
 
-void Tessellator_flush(Tessellator* tessellator) {
-    // Flip the buffer
-    glVertexPointer(3, GL_FLOAT, 0, tessellator->vertexBuffer);
+void Tessellator_flush(Tessellator* t) {
+    glVertexPointer(3, GL_FLOAT, 0, t->vertexBuffer);
     glEnableClientState(GL_VERTEX_ARRAY);
 
-    if (tessellator->hasTexture) {
-        glTexCoordPointer(2, GL_FLOAT, 0, tessellator->textureCoordinateBuffer);
+    if (t->hasTexture) {
+        glTexCoordPointer(2, GL_FLOAT, 0, t->texBuffer);
         glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     }
-
-    if (tessellator->hasColor) {
-        glColorPointer(3, GL_FLOAT, 0, tessellator->colorBuffer);
+    if (t->hasColor) {
+        glColorPointer(3, GL_FLOAT, 0, t->colorBuffer);
         glEnableClientState(GL_COLOR_ARRAY);
     }
 
-    glDrawArrays(GL_QUADS, 0, tessellator->vertices);
+    glDrawArrays(GL_QUADS, 0, t->vertices);
 
-    // Reset after rendering
-    Tessellator_clear(tessellator);
+    Tessellator_clear(t);
 }
 
-void Tessellator_clear(Tessellator* tessellator) {
-    memset(tessellator->vertexBuffer, 0, sizeof(tessellator->vertexBuffer));
-    memset(tessellator->textureCoordinateBuffer, 0, sizeof(tessellator->textureCoordinateBuffer));
-    memset(tessellator->colorBuffer, 0, sizeof(tessellator->colorBuffer));
-    tessellator->vertices = 0;
-    tessellator->hasTexture = 0;
-    tessellator->hasColor = 0;
+void Tessellator_clear(Tessellator* t) {
+    // it’s fine not to zero buffers every time; we only reset counters/flags
+    t->vertices   = 0;
+    t->hasTexture = 0;
+    t->hasColor   = 0;
 }

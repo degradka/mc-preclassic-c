@@ -1,25 +1,25 @@
+// level/chunk.h — chunk display lists, rebuild & render
+
 #ifndef CHUNK_H
 #define CHUNK_H
 
 #include <stdbool.h>
-
 #include "level.h"
 #include "tessellator.h"
 #include "phys/aabb.h"
 
-typedef struct {
-    int rebuiltThisFrame;
-    int updates;
+struct Level; typedef struct Level Level;
 
+typedef struct Chunk {
     Level* level;
-    int texture;
+    int    texture;
 
     AABB boundingBox;
 
     int minX, minY, minZ;
     int maxX, maxY, maxZ;
 
-    int lists;
+    int  lists;   // base display list id (0:bright, 1:shadow)
     bool dirty;
 } Chunk;
 

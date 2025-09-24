@@ -1,294 +1,348 @@
+// rubydung.c — entry point, window+gl init, camera, picking, main loop
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
+#include <float.h>
+
 #include <GL/glew.h>
+#include <GL/glu.h>
 #include <GLFW/glfw3.h>
 
-#include "level/levelrenderer.h"
+#include "common.h"
+
 #include "level/level.h"
+#include "level/levelrenderer.h"
 #include "player.h"
 #include "timer.h"
 #include "hitresult.h"
 
-GLFWwindow* window;
-Level level;
-LevelRenderer levelRenderer;
-Player player;
-Timer timer;
+static GLFWwindow*   window;
+static Level         level;
+static LevelRenderer levelRenderer;
+static Player        player;
+static Timer         timer;
 
-const int width = 1024;
-const int height = 768;
+static int prevLeft  = GLFW_RELEASE;
+static int prevRight = GLFW_RELEASE;
+static int prevEnter = GLFW_RELEASE;
 
-GLfloat fogColor[4] = {14 / 255.0f, 11 / 255.0f, 10 / 255.0f, 1.0f};
+static const int WIN_WIDTH  = 1024;
+static const int WIN_HEIGHT = 768;
 
-int viewportBuffer[16];
-int selectBuffer[2000];
-HitResult hitResult;
-int isHitNull = 1;
+static GLfloat fogColor[4] = { 14.0f/255.0f, 11.0f/255.0f, 10.0f/255.0f, 1.0f };
 
-void tick(Player* player, GLFWwindow* window);
+static int      isHitNull = 1;
+static HitResult hitResult;
 
-void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+static void tick(Player* player, GLFWwindow* window);
+
+/* --- input & GL state helpers ------------------------------------------------ */
+
+static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mods) {
+    (void)scancode; (void)mods;
     if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
+        glfwSetWindowShouldClose(w, GLFW_TRUE);
     }
 }
 
-void initFog() {
+static void initFog(void) {
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_LINEAR);
-    glFogf(GL_FOG_START, -10);
-    glFogf(GL_FOG_END, 20);
+    glFogf(GL_FOG_START, -10.0f);
+    glFogf(GL_FOG_END,   20.0f);
     glFogfv(GL_FOG_COLOR, fogColor);
     glDisable(GL_FOG);
 }
 
-int init(Level* level, LevelRenderer* levelRenderer, Player* player) {
-    // Initialize GLFW
+/* --- boot/shutdown ----------------------------------------------------------- */
+
+static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     if (!glfwInit()) {
         fprintf(stderr, "Failed to initialize GLFW\n");
-        return 0; // Return 0 on failure
+        return 0;
     }
 
-    // Set GLFW window hints
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    // Create a windowed mode window and its OpenGL context
-    window = glfwCreateWindow(width, height, "RubyDung", NULL, NULL);
+    window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, "Game", NULL, NULL);
     if (!window) {
         glfwTerminate();
         fprintf(stderr, "Failed to create GLFW window\n");
-        return 0; // Return 0 on failure
+        return 0;
     }
-
-    // Make the window's context current
     glfwMakeContextCurrent(window);
+    glfwSwapInterval(0); // uncapped
+
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        fprintf(stderr, "GLEW init failed: %s\n", glewGetErrorString(err));
+        return 0;
+    }
 
     glEnable(GL_TEXTURE_2D);
     glShadeModel(GL_SMOOTH);
+    glDisable(GL_LIGHTING);
 
-    // Enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Set the clear color
     glClearColor(0.5f, 0.8f, 1.0f, 0.0f);
 
-    // Enable depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    // Grab the mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
 
-    // Set the key callback function
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPos(window, 0, 0);
     glfwSetKeyCallback(window, keyCallback);
 
-    // Initialize Level
-    Level_init(level, 256, 256, 64);
+    Level_init(lvl, 256, 256, 64);
+    LevelRenderer_init(lr, lvl);
+    calcLightDepths(lvl, 0, 0, lvl->width, lvl->height);
 
-    // Initialize LevelRenderer
-    LevelRenderer_init(levelRenderer, level);
+    Player_init(p, lvl);
+    Timer_init(&timer, 60.0f);
 
-    Player_init(player, level);
-
-    // Initialize the timer
-    Timer_init(&timer, 60.0);
-
-    return 1; // Return 1 on success
+    return 1;
 }
 
-void destroy(Level* level) {
-    // Save level
-    Level_save(level);
-
-    // Destroy Level
-    Level_destroy(level);
-
-    // Terminate GLFW
+static void destroy(Level* lvl) {
+    Level_save(lvl);
+    Level_destroy(lvl);
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-void moveCameraToPlayer(Player* player, float partialTicks) {
-    // Debug
-    //printf("Debug: Player Position: (%.2f, %.2f, %.2f)\n", player->x, player->y, player->z);
-    //printf("Debug: Mouse Look: (xRotation=%.2f, yRotation=%.2f)\n", player->xRotation, player->yRotation);
+/* --- camera ------------------------------------------------------------------ */
 
-    // Eye height
-    glTranslatef(0.0f, 0.0f, -0.3f);
+static void moveCameraToPlayer(Player* p, float t) {
+    glTranslatef(0.0f, 0.0f, -0.3f); // eye offset
 
-    // Rotate camera
-    glRotatef(player->xRotation, 1.0f, 0.0f, 0.0f);
-    glRotatef(player->yRotation, 0.0f, 1.0f, 0.0f);
+    glRotatef(p->xRotation, 1.0f, 0.0f, 0.0f);
+    glRotatef(p->yRotation, 0.0f, 1.0f, 0.0f);
 
-    // Smooth movement
-    double x = player->prevX + (player->x - player->prevX) * partialTicks;
-    double y = player->prevY + (player->y - player->prevY) * partialTicks;
-    double z = player->prevZ + (player->z - player->prevZ) * partialTicks;
+    double x = p->prevX + (p->x - p->prevX) * t;
+    double y = p->prevY + (p->y - p->prevY) * t;
+    double z = p->prevZ + (p->z - p->prevZ) * t;
 
-    // Move camera to player's location
     glTranslated(-x, -y, -z);
 }
 
-void setupCamera(Player* player, float partialTicks) {
+static void setupCamera(Player* p, float t) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-
-    gluPerspective(70, (double)width / (double)height, 0.05F, 1000);
+    gluPerspective(70.0, (double)WIN_WIDTH / (double)WIN_HEIGHT, 0.05, 1000.0);
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-    moveCameraToPlayer(player, partialTicks);
+    moveCameraToPlayer(p, t);
 }
 
-void setupPickCamera(Player* player, float partialTicks, double x, double y) {
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glGetIntegerv(GL_VIEWPORT, viewportBuffer);
-    gluPickMatrix(x, y, 5.0, 5.0, viewportBuffer);
-    gluPerspective(70.0, (double)width / (double)height, 0.05f, 1000.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+/* --- picking ----------------------------------------------------------------- */
 
-    moveCameraToPlayer(player, partialTicks);
+static void get_look_dir(const Player* p, double* dx, double* dy, double* dz) {
+    const double yaw   = p->yRotation * M_PI / 180.0;
+    const double pitch = p->xRotation * M_PI / 180.0;
+    const double cp = cos(pitch), sp = sin(pitch);
+    const double cy = cos(yaw),   sy = sin(yaw);
+    *dx =  sy * cp;   // +X right
+    *dy = -sp;        // +Y up
+    *dz = -cy * cp;   // -Z forward
 }
 
-void pick(float partialTicks) {
-    int selectBufferPos = 0;
-    //glSelectBuffer(sizeof(selectBuffer), selectBuffer);
-    glRenderMode(GL_SELECT);
-    setupPickCamera(&player, partialTicks, width / 2, height / 2);
-    //LevelRenderer_renderPick(&level, &levelRenderer);  <--- throws a fucking segfault TODO
-    int hits = glRenderMode(GL_RENDER);
-    long closest = 0L;
-    int names[10];
-    int hitNameCount = 0;
+static int raycast_block(const Level* lvl,
+                         double ox, double oy, double oz,
+                         double dx, double dy, double dz,
+                         double maxDist,
+                         HitResult* out) {
+    int x = (int)floor(ox);
+    int y = (int)floor(oy);
+    int z = (int)floor(oz);
 
-    for (int i = 0; i < hits; i++) {
-        int nameCount = selectBuffer[selectBufferPos++];
-        long minZ = selectBuffer[selectBufferPos++];
-        selectBufferPos++;
-        int j;
+    const int stepX = (dx > 0) - (dx < 0);
+    const int stepY = (dy > 0) - (dy < 0);
+    const int stepZ = (dz > 0) - (dz < 0);
 
-        if (minZ >= closest && i != 0) {
-            for (j = 0; j < nameCount; j++) {
-                selectBufferPos++;
+    double tMaxX = (dx != 0.0) ? (((stepX > 0 ? (x + 1) : x) - ox) / dx) : DBL_MAX;
+    double tMaxY = (dy != 0.0) ? (((stepY > 0 ? (y + 1) : y) - oy) / dy) : DBL_MAX;
+    double tMaxZ = (dz != 0.0) ? (((stepZ > 0 ? (z + 1) : z) - oz) / dz) : DBL_MAX;
+
+    double tDeltaX = (dx != 0.0) ? fabs(1.0 / dx) : DBL_MAX;
+    double tDeltaY = (dy != 0.0) ? fabs(1.0 / dy) : DBL_MAX;
+    double tDeltaZ = (dz != 0.0) ? fabs(1.0 / dz) : DBL_MAX;
+
+    int face = -1;
+    double t = 0.0;
+
+    while (t <= maxDist) {
+        if (x < 0 || y < 0 || z < 0 || x >= lvl->width || y >= lvl->depth || z >= lvl->height)
+            return 0;
+
+        if (Level_isSolidTile(lvl, x, y, z)) {
+            if (out) hitresult_create(out, x, y, z, 0, (face < 0 ? 0 : face));
+            return 1;
+        }
+
+        if (tMaxX < tMaxY) {
+            if (tMaxX < tMaxZ) {
+                x += stepX; t = tMaxX; tMaxX += tDeltaX;
+                face = (stepX > 0) ? 4 : 5;
+            } else {
+                z += stepZ; t = tMaxZ; tMaxZ += tDeltaZ;
+                face = (stepZ > 0) ? 2 : 3;
             }
         } else {
-            closest = minZ;
-            hitNameCount = nameCount;
-
-            for (int j = 0; j < nameCount; j++) {
-                names[j] = selectBuffer[selectBufferPos++];
+            if (tMaxY < tMaxZ) {
+                y += stepY; t = tMaxY; tMaxY += tDeltaY;
+                face = (stepY > 0) ? 0 : 1;
+            } else {
+                z += stepZ; t = tMaxZ; tMaxZ += tDeltaZ;
+                face = (stepZ > 0) ? 2 : 3;
             }
         }
     }
-
-    if (hitNameCount > 0) {
-        //hitresult_create(&hitResult, names[0], names[1], names[2], names[3], names[4]);
-        isHitNull = 0;
-    } else {
-        isHitNull = 1;
-    }
-
+    return 0;
 }
 
-void render(Level level, LevelRenderer levelRenderer, Player* player, GLFWwindow* window, float partialTicks) {
-    // Get mouse motion
-    double motionX, motionY;
-    glfwGetCursorPos(window, &motionX, &motionY);
-    motionX *= 0.2;  // Adjust sensitivity
-    motionY *= -0.2;
+static void pick(float t) {
+    double x = player.prevX + (player.x - player.prevX) * t;
+    double y = player.prevY + (player.y - player.prevY) * t;
+    double z = player.prevZ + (player.z - player.prevZ) * t;
 
-    pick(partialTicks);
+    double dx, dy, dz;
+    get_look_dir(&player, &dx, &dy, &dz);
 
-    // Rotate the camera using the mouse motion input
-    Player_turn(player, window, motionX, motionY);
+    // nudge origin to match the 0.3 view-space translate
+    x += dx * 0.3; y += dy * 0.3; z += dz * 0.3;
 
-    // Clear color and depth buffer
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    const int reachBlocks = 3; // axis-aligned reach cube
 
-    // Setup normal player camera
-    setupCamera(player, partialTicks);
+    HitResult hr;
+    if (raycast_block(&level, x, y, z, dx, dy, dz, 100.0, &hr)) {
+        int px = (int)floor(player.x);
+        int py = (int)floor(player.y);
+        int pz = (int)floor(player.z);
+        if (abs(hr.x - px) <= reachBlocks &&
+            abs(hr.y - py) <= reachBlocks &&
+            abs(hr.z - pz) <= reachBlocks) {
+            hitResult = hr;
+            isHitNull = 0;
+            return;
+        }
+    }
+    isHitNull = 1;
+}
 
-    // Setup fog
-    initFog();
+/* --- input actions ----------------------------------------------------------- */
 
-    // Render bright tiles
-    LevelRenderer_render(&levelRenderer, 0);
+static void handleSaveKey(GLFWwindow* w) {
+    int enter = glfwGetKey(w, GLFW_KEY_ENTER);
+    if (enter == GLFW_PRESS && prevEnter == GLFW_RELEASE) {
+        Level_save(&level);
+    }
+    prevEnter = enter;
+}
 
-    // Enable fog to render shadow
-    glEnable(GL_FOG);
+static void handleBlockClicks(GLFWwindow* w) {
+    int left  = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT);
+    int right = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT);
 
-    // Render dark tiles in shadow
-    LevelRenderer_render(&levelRenderer, 1);
-
-    // Finish rendering
-    glDisable(GL_TEXTURE_2D);
-
-    if (!isHitNull) {
-        LevelRenderer_renderHit(&levelRenderer, &hitResult);
+    if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
+        level_setTile(&level, hitResult.x, hitResult.y, hitResult.z, 0);
     }
 
-    // Update the display
+    if (right == GLFW_PRESS && prevRight == GLFW_RELEASE && !isHitNull) {
+        int nx = 0, ny = 0, nz = 0;
+        switch (hitResult.f) {
+            case 0: ny = -1; break; // bottom
+            case 1: ny =  1; break; // top
+            case 2: nz = -1; break; // -Z
+            case 3: nz =  1; break; // +Z
+            case 4: nx = -1; break; // -X
+            case 5: nx =  1; break; // +X
+        }
+        level_setTile(&level, hitResult.x + nx, hitResult.y + ny, hitResult.z + nz, 1);
+    }
+
+    prevLeft  = left;
+    prevRight = right;
+}
+
+/* --- frame ------------------------------------------------------------------- */
+
+static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, float t) {
+    (void)w;
+    (void)lvl;
+
+    double mx, my;
+    glfwGetCursorPos(window, &mx, &my);
+    my *= -1.0;
+    Player_turn(p, window, (float)mx, (float)my);
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    setupCamera(p, t);
+    initFog();
+
+    LevelRenderer_render(lr, 0);    // lit layer
+    glEnable(GL_FOG);
+    LevelRenderer_render(lr, 1);    // shadow layer
+
+    glDisable(GL_TEXTURE_2D);
+    if (!isHitNull) LevelRenderer_renderHit(lr, &hitResult);
+
     glfwSwapBuffers(window);
 }
 
-void run(Level* level, LevelRenderer* levelRenderer, Player* player) {
-    // Initialize the game
-    if (!init(level, levelRenderer, player)) {
-        fprintf(stderr, "Failed to initialize RubyDung\n");
-        destroy(level);
+/* --- main loop --------------------------------------------------------------- */
+
+static void run(Level* lvl, LevelRenderer* lr, Player* p) {
+    if (!init(lvl, lr, p)) {
+        fprintf(stderr, "Failed to initialize game\n");
+        destroy(lvl);
         exit(EXIT_FAILURE);
     }
 
     int frames = 0;
-    long long lastTime = currentTimeMillis();
+    long long last = currentTimeMillis();
 
-    // Start the game loop
     while (!glfwWindowShouldClose(window)) {
-        // Framerate limit
         glfwPollEvents();
 
-        // Update the timer
         Timer_advanceTime(&timer);
-    
-        // Call the tick to reach updates 20 per second
-        for (int i = 0; i < timer.ticks; ++i) {
-            tick(player, window);
-        }
+        for (int i = 0; i < timer.ticks; ++i) tick(p, window);
 
-        // Render the game
-        render(*level, *levelRenderer, player, window, timer.partialTicks);
+        pick(timer.partialTicks);
+        handleBlockClicks(window);
+        handleSaveKey(window);
+
+        render(lvl, lr, p, window, timer.partialTicks);
 
         frames++;
-
-        while (currentTimeMillis() >= lastTime + 1000LL) {
+        while (currentTimeMillis() >= last + 1000LL) {
+#ifndef NDEBUG
             printf("%d fps\n", frames);
-
-            lastTime += 1000LL;
+#endif
+            last += 1000LL;
             frames = 0;
         }
-
-        // Update the display
-        glfwSwapBuffers(window);
     }
 
-    // Destroy I/O and save game
-    destroy(level);
+    destroy(lvl);
 }
 
 int main(void) {
-    // Run the game
     run(&level, &levelRenderer, &player);
-
     return EXIT_SUCCESS;
 }
 
-void tick(Player* player, GLFWwindow* window) {
-    // Your existing tick function
-    Player_tick(player, window);
+static void tick(Player* p, GLFWwindow* w) {
+    (void)w;
+    Player_tick(p, window);
 }

@@ -1,3 +1,5 @@
+// level/chunk.c — chunk display lists, rebuild & render
+
 #include "chunk.h"
 #include "tile.h"
 #include "tessellator.h"
@@ -5,80 +7,62 @@
 
 extern Tessellator TESSELLATOR;
 
-void Chunk_init(Chunk* chunk, Level* level, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
-    chunk->level = level;
+// global stats (keep parity with original Java static fields)
+int CHUNK_RebuiltThisFrame = 0;
+int CHUNK_Updates          = 0;
 
-    chunk->texture = loadTexture("resources/terrain.png", GL_NEAREST);
+void Chunk_init(Chunk* c, Level* level, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+    c->level = level;
+    c->texture = loadTexture("resources/terrain.png", GL_NEAREST);
 
-    chunk->minX = minX;
-    chunk->minY = minY;
-    chunk->minZ = minZ;
-    chunk->maxX = maxX;
-    chunk->maxY = maxY;
-    chunk->maxZ = maxZ;
-    chunk->dirty = true;
+    c->minX = minX; c->minY = minY; c->minZ = minZ;
+    c->maxX = maxX; c->maxY = maxY; c->maxZ = maxZ;
+    c->dirty = true;
 
-    // Create bounding box object of chunk
-    chunk->boundingBox = AABB_create(minX, minY, minZ, maxX, maxY, maxZ);
-
-    // Generate lists id
-    chunk->lists = glGenLists(2);
+    c->boundingBox = AABB_create(minX, minY, minZ, maxX, maxY, maxZ);
+    c->lists = glGenLists(2);
 }
 
-void Chunk_rebuild(Chunk* chunk, int layer) {
-    if (chunk->rebuiltThisFrame == 2) {
-        // Rebuild limit reached for this frame
-        return;
-    }
+void Chunk_rebuild(Chunk* c, int layer) {
+    if (CHUNK_RebuiltThisFrame == 2) return;
 
-    // Update global stats
-    chunk->updates++;
-    chunk->rebuiltThisFrame++;
+    CHUNK_Updates++;
+    CHUNK_RebuiltThisFrame++;
 
-    // Set the chunk as not dirty
-    chunk->dirty = false;
+    c->dirty = false;
 
-    // Setup tile rendering
-    glNewList(chunk->lists + layer, GL_COMPILE);
+    glNewList(c->lists + layer, GL_COMPILE);
     glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, chunk->texture);
+    glBindTexture(GL_TEXTURE_2D, c->texture);
     Tessellator_init(&TESSELLATOR);
 
-    // For each tile in this chunk
-    for (int x = chunk->minX; x < chunk->maxX; ++x) {
-        for (int y = chunk->minY; y < chunk->maxY; ++y) {
-            for (int z = chunk->minZ; z < chunk->maxZ; ++z) {
-                // Is a tile at this location?
-                if (Level_isTile(chunk->level, x, y, z)) {
-                    //int id = y != chunk->level->depth * 2 / 3;
-
-                    if (y > chunk->level->depth - 40 && Level_getBrightness(chunk->level, x, y, z) == 1.0F) {
-                        Tile_render(&grass, &TESSELLATOR, chunk->level, layer, x, y, z);
+    for (int x = c->minX; x < c->maxX; ++x) {
+        for (int y = c->minY; y < c->maxY; ++y) {
+            for (int z = c->minZ; z < c->maxZ; ++z) {
+                if (Level_isTile(c->level, x, y, z)) {
+                    int grassLevel = c->level->depth * 2 / 3;
+                    int id = (y != grassLevel) ? 1 : 0; // 0=grass, 1=rock
+                    if (id == 0) {
+                        Tile_render(&grass, &TESSELLATOR, c->level, layer, x, y, z);
                     } else {
-                        Tile_render(&rock, &TESSELLATOR, chunk->level, layer, x, y, z);
+                        Tile_render(&rock,  &TESSELLATOR, c->level, layer, x, y, z);
                     }
                 }
             }
         }
     }
 
-    // Finish tile rendering
     Tessellator_flush(&TESSELLATOR);
     glDisable(GL_TEXTURE_2D);
     glEndList();
 }
 
-void Chunk_render(Chunk* chunk, int layer) {
-    // Rebuild chunk if dirty
-    if (chunk->dirty) {
-        Chunk_rebuild(chunk, 0);
-        Chunk_rebuild(chunk, 1);
+void Chunk_render(Chunk* c, int layer) {
+    if (c->dirty) {
+        Chunk_rebuild(c, 0);
+        Chunk_rebuild(c, 1);
     }
-
-    // Call display list ID to render the chunk
-    glCallList(chunk->lists + layer);
+    glCallList(c->lists + layer);
 }
 
-void Chunk_setDirty(Chunk* chunk) {
-    chunk->dirty = true;
-}
+void Chunk_setDirty(Chunk* c) { c->dirty = true; }
