@@ -199,3 +199,22 @@ bool Level_isLit(const Level* level, int x, int y, int z) {
     return (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height) ||
            (y >= level->lightDepths[x + z * level->width]);
 }
+
+void Level_onTick(Level* level) {
+    // amount of tiles processed per tick
+    int totalTiles = level->width * level->height * level->depth;
+    int ticks = totalTiles / 400;
+    if (ticks < 1) ticks = 1;
+
+    for (int i = 0; i < ticks; ++i) {
+        int x = rand() % level->width;
+        int y = rand() % level->depth;
+        int z = rand() % level->height;
+
+        int id = Level_getTile(level, x, y, z);
+        const Tile* t = (id >= 0 && id < 256) ? gTiles[id] : NULL;
+        if (t && t->onTick) {
+            t->onTick(t, level, x, y, z);
+        }
+    }
+}

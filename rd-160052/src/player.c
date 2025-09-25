@@ -14,8 +14,8 @@ void Player_turn(Player* p, GLFWwindow* window, float dx, float dy) {
     glfwSetCursorPos(window, 0, 0);
 }
 
-void Player_tick(Player* p, GLFWwindow* window) {
-    Entity_tick(&p->e);
+void Player_onTick(Player* p, GLFWwindow* window) {
+    Entity_onTick(&p->e);
 
     float forward = 0.0f, strafe = 0.0f;
 

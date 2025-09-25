@@ -483,9 +483,13 @@ int main(void) {
 
 static void tick(Player* p, GLFWwindow* w) {
     (void)w;
-    Player_tick(p, window);
+
+    // random tile ticks (grass growth/decay lives here)
+    Level_onTick(&level);
+
+    Player_onTick(p, window);
     for (int i = 0; i < mobCount; ) {
-        Zombie_tick(&mobs[i]);
+        Zombie_onTick(&mobs[i]);
         if (mobs[i].base.removed) {
             mobs[i] = mobs[mobCount - 1];
             mobCount--;

@@ -27,8 +27,8 @@ void Zombie_init(Zombie* z, Level* level, double x, double y, double zpos) {
     if (!texChar) texChar = loadTexture("resources/char.png", GL_NEAREST);
 }
 
-void Zombie_tick(Zombie* z) {
-    Entity_tick(&z->base);
+void Zombie_onTick(Zombie* z) {
+    Entity_onTick(&z->base);
 
     z->rotation += z->rotationMotionFactor;
     z->rotationMotionFactor *= 0.99;

@@ -13,7 +13,7 @@ typedef struct Player {
 
 void Player_init(Player* player, Level* level);
 
-void Player_tick(Player* player, GLFWwindow* window);
+void Player_onTick(Player* player, GLFWwindow* window);
 void Player_turn(Player* player, GLFWwindow* window, float dx, float dy);
 
 #endif  // PLAYER_H

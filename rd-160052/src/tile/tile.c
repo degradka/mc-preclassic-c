@@ -105,6 +105,7 @@ static void registerTile(Tile* t, int id, int tex, int (*getTex)(const Tile*,int
     t->id = id; t->textureId = tex;
     t->getTexture = getTex ? getTex : Tile_default_getTexture;
     t->render = Tile_render_shared;
+    t->onTick = NULL;
     gTiles[id] = t;
 }
 
@@ -122,7 +123,27 @@ static int Grass_getTexture(const Tile* self, int face) {
     (void)self;
     return (face == 1) ? 0 : (face == 0) ? 2 : 3;
 }
+
 Tile TILE_GRASS;
+
+static void Grass_onTick(const Tile* self, Level* lvl, int x, int y, int z) {
+    (void)self;
+    if (Level_isLit(lvl, x, y, z)) {
+        // try 4 random neighbors
+        for (int i = 0; i < 4; ++i) {
+            int tx = x + (rand() % 3) - 1;  // [-1..+1]
+            int ty = y + (rand() % 5) - 3;  // [-3..+1] (matches Java’s skew)
+            int tz = z + (rand() % 3) - 1;  // [-1..+1]
+            if (Level_getTile(lvl, tx, ty, tz) == TILE_DIRT.id && Level_isLit(lvl, tx, ty, tz)) {
+                level_setTile(lvl, tx, ty, tz, TILE_GRASS.id);
+            }
+        }
+    } else {
+        // no sunlight: turn into dirt
+        level_setTile(lvl, x, y, z, TILE_DIRT.id);
+    }
+}
+
 
 void Tile_registerAll(void) {
     memset((void*)gTiles, 0, sizeof(gTiles));
@@ -131,6 +152,8 @@ void Tile_registerAll(void) {
     registerTile(&TILE_DIRT,       3,  2, NULL);
     registerTile(&TILE_STONEBRICK, 4, 16, NULL);
     registerTile(&TILE_WOOD,       5,  4, NULL);
+
+    TILE_GRASS.onTick = Grass_onTick;
 }
 
 /* ---------- untextured single-face helper (for hit highlight) ---------- */

@@ -38,7 +38,7 @@ void Entity_turn(Entity* e, float dx, float dy) {
     if (e->xRotation < -90.0f) e->xRotation = -90.0f;
 }
 
-void Entity_tick(Entity* e) {
+void Entity_onTick(Entity* e) {
     e->prevX = e->x;
     e->prevY = e->y;
     e->prevZ = e->z;

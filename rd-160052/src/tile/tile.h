@@ -11,10 +11,10 @@ typedef struct Tile Tile;
 struct Tile {
     int id;
     int textureId; // default atlas slot
-    // return atlas slot for a given face (0: bottom, 1: top, 2:-Z, 3:+Z, 4:-X, 5:+X)
     int (*getTexture)(const Tile* self, int face);
-    // shared render uses getTexture(self, face)
     void (*render)(const Tile* self, Tessellator* t, const Level* lvl, int layer, int x, int y, int z);
+    // random tick hook (may be NULL)
+    void (*onTick)(const Tile* self, Level* lvl, int x, int y, int z);
 };
 
 // Global registry, index by tile id (0..255)
