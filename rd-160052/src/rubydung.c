@@ -445,6 +445,8 @@ static void run(Level* lvl, LevelRenderer* lr, Player* p) {
         handleBlockClicks(window);
         handleGameplayKeys(window);
 
+        LevelRenderer_updateDirtyChunks(&levelRenderer, &player);
+
         render(lvl, lr, p, window, timer.partialTicks);
 
         frames++;

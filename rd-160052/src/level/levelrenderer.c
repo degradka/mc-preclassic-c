@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <GL/glu.h>
 #include <GLFW/glfw3.h>
+#include <stdlib.h>
 
 #include "levelrenderer.h"
 #include "level.h"
@@ -11,6 +12,7 @@
 #include "../tile/tile.h"
 #include "../timer.h"
 #include "../hitresult.h"
+#include "../player.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -38,9 +40,6 @@ void LevelRenderer_init(LevelRenderer* r, Level* level) {
 }
 
 void LevelRenderer_render(const LevelRenderer* r, int layer) {
-    extern int CHUNK_RebuiltThisFrame;
-    CHUNK_RebuiltThisFrame = 0;
-
     frustum_calculate();
 
     int total = r->chunkAmountX * r->chunkAmountY * r->chunkAmountZ;
@@ -53,6 +52,65 @@ void LevelRenderer_render(const LevelRenderer* r, int layer) {
 
 void LevelRenderer_destroy(LevelRenderer* r) {
     free(r->chunks);
+}
+
+/* --- dirty-chunk prioritization -------------------------------------------- */
+
+// sort state for qsort comparator
+static const Player* gSortPlayer = NULL;
+static long long gSortNow = 0;
+
+static int dirty_cmp(const void* a, const void* b) {
+    const Chunk* c1 = *(const Chunk* const*)a;
+    const Chunk* c2 = *(const Chunk* const*)b;
+
+    if (c1 == c2) return 0;
+
+    // visible chunks first
+    int v1 = frustum_isVisible(&c1->boundingBox);
+    int v2 = frustum_isVisible(&c2->boundingBox);
+    if (v1 && !v2) return -1;
+    if (v2 && !v1) return  1;
+
+    // higher priority to larger dirty duration (mirror Java logic: they compare ints after /2000)
+    int d1 = (int)((gSortNow - c1->dirtiedTime) / 2000LL);
+    int d2 = (int)((gSortNow - c2->dirtiedTime) / 2000LL);
+    if (d1 < d2) return -1;
+    if (d1 > d2) return  1;
+
+    // finally, closer to player first
+    double dist1 = Chunk_distanceToSqr(c1, gSortPlayer);
+    double dist2 = Chunk_distanceToSqr(c2, gSortPlayer);
+    return (dist1 < dist2) ? -1 : 1;
+}
+
+void LevelRenderer_updateDirtyChunks(LevelRenderer* r, const Player* player) {
+    frustum_calculate(); // ensure frustum up-to-date for visibility test
+
+    // collect dirty chunk pointers
+    int total = r->chunkAmountX * r->chunkAmountY * r->chunkAmountZ;
+    Chunk** list = (Chunk**)malloc((size_t)total * sizeof(Chunk*));
+    if (!list) return;
+
+    int n = 0;
+    for (int i = 0; i < total; ++i) {
+        if (Chunk_isDirty(&r->chunks[i])) list[n++] = &r->chunks[i];
+    }
+    if (n == 0) { free(list); return; }
+
+    // sort with priorities
+    gSortPlayer = player;
+    gSortNow    = currentTimeMillis();
+    qsort(list, (size_t)n, sizeof(Chunk*), dirty_cmp);
+
+    // rebuild up to 8 per frame
+    int limit = n < 8 ? n : 8;
+    for (int i = 0; i < limit; ++i) {
+        Chunk_rebuild(list[i], 0);
+        Chunk_rebuild(list[i], 1);
+    }
+
+    free(list);
 }
 
 static void draw_face_immediate(int x, int y, int z, int face) {
