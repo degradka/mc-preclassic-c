@@ -45,10 +45,12 @@ static int texTerrain = 0;
 static Tessellator hudTess;
 static int selectedTileId = 1;   // 1=rock, 3=dirt, 4=stoneBrick, 5=wood
 
-static const int WIN_WIDTH  = 1024;
-static const int WIN_HEIGHT = 768;
+static int gWinWidth  = 1024;
+static int gWinHeight = 768;
+static int gIsFullscreen = 1;
 
-static GLfloat fogColor[4] = { 14.0f/255.0f, 11.0f/255.0f, 10.0f/255.0f, 1.0f };
+static GLfloat fogColorDaylight[4] = { 0.50f, 0.80f, 1.00f, 1.0f };
+static GLfloat fogColorShadow  [4] = { 14.0f/255.0f, 11.0f/255.0f, 10.0f/255.0f, 1.0f };
 
 static int      isHitNull = 1;
 static HitResult hitResult;
@@ -64,13 +66,12 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
     }
 }
 
-static void initFog(void) {
+static void initFogWithColor(const GLfloat color[4]) {
     glEnable(GL_FOG);
     glFogi(GL_FOG_MODE, GL_LINEAR);
     glFogf(GL_FOG_START, -10.0f);
     glFogf(GL_FOG_END,   20.0f);
-    glFogfv(GL_FOG_COLOR, fogColor);
-    glDisable(GL_FOG);
+    glFogfv(GL_FOG_COLOR, color);
 }
 
 /* --- boot/shutdown ----------------------------------------------------------- */
@@ -84,7 +85,9 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    window = glfwCreateWindow(WIN_WIDTH, WIN_HEIGHT, "Game", NULL, NULL);
+    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    window = glfwCreateWindow(mode->width, mode->height, "Game", monitor, NULL);
     if (!window) {
         glfwTerminate();
         fprintf(stderr, "Failed to create GLFW window\n");
@@ -129,6 +132,13 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
 
     Player_init(p, lvl);
 
+    mobCount = 0;
+    for (int i = 0; i < 10 && i < MAX_MOBS; ++i) {
+        Zombie_init(&mobs[mobCount], lvl, 128.0, 0.0, 129.0);
+        Entity_resetPosition(&mobs[mobCount].base);
+        mobCount++;
+    }
+
     Timer_init(&timer, 60.0f);
 
     return 1;
@@ -157,20 +167,20 @@ static void moveCameraToPlayer(Player* p, float t) {
 }
 
 static void setupCamera(Player* p, float t) {
+    int fbw, fbh; glfwGetFramebufferSize(window, &fbw, &fbh);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(70.0, (double)WIN_WIDTH / (double)WIN_HEIGHT, 0.05, 1000.0);
-
+    gluPerspective(70.0, (double)fbw / (double)fbh, 0.05, 1000.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     moveCameraToPlayer(p, t);
 }
 
 static void setupOrthoCamera(void) {
+    int fbw, fbh; glfwGetFramebufferSize(window, &fbw, &fbh);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0.0, WIN_WIDTH, WIN_HEIGHT, 0.0, 100.0, 300.0);
-
+    glOrtho(0.0, fbw, fbh, 0.0, 100.0, 300.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -200.0f);
@@ -178,13 +188,13 @@ static void setupOrthoCamera(void) {
 
 static void drawGui(float partialTicks) {
     (void)partialTicks;
-
-    // Draw selected block (mini 3D preview) in top-right
     glClear(GL_DEPTH_BUFFER_BIT);
     setupOrthoCamera();
 
+    int fbw, fbh; glfwGetFramebufferSize(window, &fbw, &fbh);
+
     glPushMatrix();
-    glTranslated(WIN_WIDTH - 48, 48.0, 0.0);
+    glTranslated(fbw - 48, 48.0, 0.0);
     glScalef(48.0f, 48.0f, 48.0f);
     glRotatef(30.0f, 1, 0, 0);
     glRotatef(45.0f, 0, 1, 0);
@@ -205,15 +215,15 @@ static void drawGui(float partialTicks) {
     glPopMatrix();
 
     // Crosshair
-    int cx = WIN_WIDTH / 2, cy = WIN_HEIGHT / 2;
+    int cx = fbw / 2, cy = fbh / 2;
     glColor4f(1,1,1,1);
     Tessellator_init(&hudTess);
-    // vertical line 1px wide: (cx, cy-8) -> (cx+1, cy+9)
+    // vertical
     Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy - 8), 0.0f);
     Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy - 8), 0.0f);
     Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy + 9), 0.0f);
     Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy + 9), 0.0f);
-    // horizontal line 1px tall: (cx-8, cy) -> (cx+9, cy+1)
+    // horizontal
     Tessellator_vertex(&hudTess, (float)(cx + 9), (float)(cy + 0), 0.0f);
     Tessellator_vertex(&hudTess, (float)(cx - 8), (float)(cy + 0), 0.0f);
     Tessellator_vertex(&hudTess, (float)(cx - 8), (float)(cy + 1), 0.0f);
@@ -381,6 +391,10 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
     (void)w;
     (void)lvl;
 
+    int fbw, fbh;
+    glfwGetFramebufferSize(window, &fbw, &fbh);
+    glViewport(0, 0, fbw, fbh);
+
     double mx, my;
     glfwGetCursorPos(window, &mx, &my);
     my *= -1.0;
@@ -389,8 +403,8 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     setupCamera(p, t);
-    initFog();
 
+    initFogWithColor(fogColorDaylight);
     LevelRenderer_render(lr, 0);    // lit layer
 
     // Zombies in sunlight (lit)
@@ -401,7 +415,7 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
         }
     }
 
-    glEnable(GL_FOG);
+    initFogWithColor(fogColorShadow);
     LevelRenderer_render(lr, 1);    // shadow layer
 
     // Zombies in shadow (not lit)

@@ -137,6 +137,7 @@ void LevelRenderer_renderHit(LevelRenderer* r, HitResult* h) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     float a = (float)sin((double)currentTimeMillis() / 100.0) * 0.2f + 0.4f;
+    a *= 0.5f;
     glColor4f(1.f, 1.f, 1.f, a);
 
     draw_face_immediate(h->x, h->y, h->z, h->f);
