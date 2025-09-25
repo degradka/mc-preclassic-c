@@ -28,12 +28,12 @@ void Player_onTick(Player* p, GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) strafe  += 1.0f;
 
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS && p->e.onGround) {
-        p->e.motionY = 0.12f;
+        p->e.motionY = 0.5f;
     }
 
-    Entity_moveRelative(&p->e, strafe, forward, p->e.onGround ? 0.02f : 0.005f);
+    Entity_moveRelative(&p->e, strafe, forward, p->e.onGround ? 0.1f : 0.02f);
 
-    p->e.motionY -= 0.005; // gravity
+    p->e.motionY -= 0.08f; // gravity
 
     Entity_move(&p->e, p->e.motionX, p->e.motionY, p->e.motionZ);
 
@@ -42,7 +42,7 @@ void Player_onTick(Player* p, GLFWwindow* window) {
     p->e.motionZ *= 0.91f;
 
     if (p->e.onGround) {
-        p->e.motionX *= 0.8f;
-        p->e.motionZ *= 0.8f;
+        p->e.motionX *= 0.7f;
+        p->e.motionZ *= 0.7f;
     }
 }

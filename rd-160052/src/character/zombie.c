@@ -39,10 +39,10 @@ void Zombie_onTick(Zombie* z) {
     const float v = (float)sin(z->rotation);
     const float f = (float)cos(z->rotation);
 
-    if (z->base.onGround && ((double)rand() / RAND_MAX) < 0.01) z->base.motionY = 0.12f;
+    if (z->base.onGround && ((double)rand() / RAND_MAX) < 0.08) z->base.motionY = 0.5f;
 
-    Entity_moveRelative(&z->base, v, f, z->base.onGround ? 0.02f : 0.005f);
-    z->base.motionY -= 0.005;
+    Entity_moveRelative(&z->base, v, f, z->base.onGround ? 0.1f : 0.02f);
+    z->base.motionY -= 0.08f;
 
     Entity_move(&z->base, z->base.motionX, z->base.motionY, z->base.motionZ);
 
@@ -56,8 +56,8 @@ void Zombie_onTick(Zombie* z) {
     }
 
     if (z->base.onGround) {
-        z->base.motionX *= 0.8f;
-        z->base.motionZ *= 0.8f;
+        z->base.motionX *= 0.7f;
+        z->base.motionZ *= 0.7f;
     }
 }
 

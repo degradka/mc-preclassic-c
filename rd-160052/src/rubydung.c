@@ -139,7 +139,7 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
         mobCount++;
     }
 
-    Timer_init(&timer, 60.0f);
+    Timer_init(&timer, 20.0f);
 
     return 1;
 }
