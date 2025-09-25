@@ -17,12 +17,19 @@
 #include "player.h"
 #include "timer.h"
 #include "hitresult.h"
+#include "textures.h"
+#include "character/zombie.h"
+
+#define MAX_ZOMBIES 16
 
 static GLFWwindow*   window;
 static Level         level;
 static LevelRenderer levelRenderer;
 static Player        player;
 static Timer         timer;
+static Zombie gZombies[MAX_ZOMBIES];
+
+static int    gZombieCount = 0;
 
 static int prevLeft  = GLFW_RELEASE;
 static int prevRight = GLFW_RELEASE;
@@ -107,6 +114,26 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     calcLightDepths(lvl, 0, 0, lvl->width, lvl->height);
 
     Player_init(p, lvl);
+
+    Zombie_loadTexture();
+
+    // simple spawn: put a 4×4 grid around player spawn
+    gZombieCount = 0;
+    for (int gx = 0; gx < 2; ++gx) {
+        for (int gz = 0; gz < 2; ++gz) {
+            if (gZombieCount >= MAX_ZOMBIES) break;
+            int zx = 8 + gx * 8;
+            int zz = 8 + gz * 8;
+
+            // stand on surface using lightDepths as “ground”
+            int groundY = lvl->lightDepths[zx + zz * lvl->width] + 1;
+            Zombie_init(&gZombies[gZombieCount++],
+                        (float)zx + 0.5f,
+                        (float)groundY,
+                        (float)zz + 0.5f);
+        }
+    }
+
     Timer_init(&timer, 60.0f);
 
     return 1;
@@ -297,6 +324,12 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
     glDisable(GL_TEXTURE_2D);
     if (!isHitNull) LevelRenderer_renderHit(lr, &hitResult);
 
+    // draw zombie (re-enable texturing)
+    glEnable(GL_TEXTURE_2D);
+    for (int i = 0; i < gZombieCount; ++i) {
+        Zombie_render(&gZombies[i], t);
+    }
+
     glfwSwapBuffers(window);
 }
 
@@ -317,6 +350,8 @@ static void run(Level* lvl, LevelRenderer* lr, Player* p) {
 
         Timer_advanceTime(&timer);
         for (int i = 0; i < timer.ticks; ++i) tick(p, window);
+
+        for (int i = 0; i < gZombieCount; ++i) Zombie_tick(&gZombies[i]);
 
         pick(timer.partialTicks);
         handleBlockClicks(window);
