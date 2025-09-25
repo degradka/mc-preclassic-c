@@ -10,7 +10,7 @@ static int texChar = 0;
 
 void Zombie_init(Zombie* z, Level* level, double x, double y, double zpos) {
     Entity_init(&z->base, level);
-    Entity_setPosition(&z->base, (float)x, (float)y, (float)zpos);
+    Entity_setPosition(&z->base, x, y, zpos);
 
     Cube_init(&z->head, 0, 0);       Cube_addBox(&z->head, -4, -8, -4, 8, 8, 8);
     Cube_init(&z->body, 16, 16);     Cube_addBox(&z->body, -4, 0, -2, 8, 12, 4);

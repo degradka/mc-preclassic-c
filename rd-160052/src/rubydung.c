@@ -15,6 +15,7 @@
 #include "level/level.h"
 #include "level/levelrenderer.h"
 #include "tile/tile.h"
+#include "textures.h"
 #include "player.h"
 #include "character/zombie.h"
 #include "timer.h"
@@ -34,6 +35,14 @@ static int mobCount = 0;
 static int prevLeft  = GLFW_RELEASE;
 static int prevRight = GLFW_RELEASE;
 static int prevEnter = GLFW_RELEASE;
+static int prevNum1 = GLFW_RELEASE, prevNum2 = GLFW_RELEASE;
+static int prevNum3 = GLFW_RELEASE, prevNum4 = GLFW_RELEASE;
+static int prevG    = GLFW_RELEASE;
+
+static int texTerrain = 0;
+
+static Tessellator hudTess;
+static int selectedTileId = 1;   // 1=rock, 3=dirt, 4=stoneBrick, 5=wood
 
 static const int WIN_WIDTH  = 1024;
 static const int WIN_HEIGHT = 768;
@@ -111,19 +120,13 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
 
     Tile_registerAll();
 
+    texTerrain = loadTexture("resources/terrain.png", GL_NEAREST);
+
     Level_init(lvl, 256, 256, 64);
     LevelRenderer_init(lr, lvl);
     calcLightDepths(lvl, 0, 0, lvl->width, lvl->height);
 
     Player_init(p, lvl);
-    
-    mobCount = MAX_MOBS;
-    for (int i = 0; i < mobCount; i++) {
-        double x = (double)rand()/RAND_MAX * lvl->width;
-        double y = lvl->depth + 3.0;
-        double z = (double)rand()/RAND_MAX * lvl->height;
-        Zombie_init(&mobs[i], lvl, x, y, z);
-    }
 
     Timer_init(&timer, 60.0f);
 
@@ -160,6 +163,61 @@ static void setupCamera(Player* p, float t) {
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     moveCameraToPlayer(p, t);
+}
+
+static void setupOrthoCamera(void) {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0.0, WIN_WIDTH, WIN_HEIGHT, 0.0, 100.0, 300.0);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glTranslatef(0.0f, 0.0f, -200.0f);
+}
+
+static void drawGui(float partialTicks) {
+    (void)partialTicks;
+
+    // Draw selected block (mini 3D preview) in top-right
+    glClear(GL_DEPTH_BUFFER_BIT);
+    setupOrthoCamera();
+
+    glPushMatrix();
+    glTranslated(WIN_WIDTH - 48, 48.0, 0.0);
+    glScalef(48.0f, 48.0f, 48.0f);
+    glRotatef(30.0f, 1, 0, 0);
+    glRotatef(45.0f, 0, 1, 0);
+    glTranslatef(1.5f, -0.5f, -0.5f);
+
+    glBindTexture(GL_TEXTURE_2D, texTerrain);
+    glEnable(GL_TEXTURE_2D);
+
+    Tessellator_init(&hudTess);
+    const Tile* hand = gTiles[selectedTileId];
+    if (hand && hand->render) {
+        // render one block at (-2,0,0)
+        hand->render(hand, &hudTess, &level, 0, -2, 0, 0);
+    }
+    Tessellator_flush(&hudTess);
+
+    glDisable(GL_TEXTURE_2D);
+    glPopMatrix();
+
+    // Crosshair
+    int cx = WIN_WIDTH / 2, cy = WIN_HEIGHT / 2;
+    glColor4f(1,1,1,1);
+    Tessellator_init(&hudTess);
+    // vertical line 1px wide: (cx, cy-8) -> (cx+1, cy+9)
+    Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy - 8), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy - 8), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy + 9), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy + 9), 0.0f);
+    // horizontal line 1px tall: (cx-8, cy) -> (cx+9, cy+1)
+    Tessellator_vertex(&hudTess, (float)(cx + 9), (float)(cy + 0), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx - 8), (float)(cy + 0), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx - 8), (float)(cy + 1), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 9), (float)(cy + 1), 0.0f);
+    Tessellator_flush(&hudTess);
 }
 
 /* --- picking ----------------------------------------------------------------- */
@@ -259,12 +317,31 @@ static void pick(float t) {
 
 /* --- input actions ----------------------------------------------------------- */
 
-static void handleSaveKey(GLFWwindow* w) {
+static void handleGameplayKeys(GLFWwindow* w) {
+    // Enter = save level
     int enter = glfwGetKey(w, GLFW_KEY_ENTER);
     if (enter == GLFW_PRESS && prevEnter == GLFW_RELEASE) {
         Level_save(&level);
     }
     prevEnter = enter;
+
+    // 1..4 = select tile
+    int n1 = glfwGetKey(w, GLFW_KEY_1);
+    int n2 = glfwGetKey(w, GLFW_KEY_2);
+    int n3 = glfwGetKey(w, GLFW_KEY_3);
+    int n4 = glfwGetKey(w, GLFW_KEY_4);
+    if (n1 == GLFW_PRESS && prevNum1 == GLFW_RELEASE) selectedTileId = 1;  // rock
+    if (n2 == GLFW_PRESS && prevNum2 == GLFW_RELEASE) selectedTileId = 3;  // dirt
+    if (n3 == GLFW_PRESS && prevNum3 == GLFW_RELEASE) selectedTileId = 4;  // stone brick
+    if (n4 == GLFW_PRESS && prevNum4 == GLFW_RELEASE) selectedTileId = 5;  // wood
+    prevNum1 = n1; prevNum2 = n2; prevNum3 = n3; prevNum4 = n4;
+
+    // G = spawn zombie at player
+    int g = glfwGetKey(w, GLFW_KEY_G);
+    if (g == GLFW_PRESS && prevG == GLFW_RELEASE && mobCount < MAX_MOBS) {
+        Zombie_init(&mobs[mobCount++], &level, player.e.x, player.e.y, player.e.z);
+    }
+    prevG = g;
 }
 
 static void handleBlockClicks(GLFWwindow* w) {
@@ -276,6 +353,7 @@ static void handleBlockClicks(GLFWwindow* w) {
     }
 
     if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
+        // place on the face we hit
         int nx = 0, ny = 0, nz = 0;
         switch (hitResult.f) {
             case 0: ny = -1; break; // bottom
@@ -285,7 +363,11 @@ static void handleBlockClicks(GLFWwindow* w) {
             case 4: nx = -1; break; // -X
             case 5: nx =  1; break; // +X
         }
-        level_setTile(&level, hitResult.x + nx, hitResult.y + ny, hitResult.z + nz, 1);
+        level_setTile(&level,
+                      hitResult.x + nx,
+                      hitResult.y + ny,
+                      hitResult.z + nz,
+                      selectedTileId);
     }
 
     prevLeft  = left;
@@ -315,9 +397,13 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
     glEnable(GL_FOG);
     LevelRenderer_render(lr, 1);    // shadow layer
 
+    glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
+    glDisable(GL_FOG);
 
     if (!isHitNull) LevelRenderer_renderHit(lr, &hitResult);
+
+    drawGui(t);
 
     glfwSwapBuffers(window);
 }
@@ -342,7 +428,7 @@ static void run(Level* lvl, LevelRenderer* lr, Player* p) {
 
         pick(timer.partialTicks);
         handleBlockClicks(window);
-        handleSaveKey(window);
+        handleGameplayKeys(window);
 
         render(lvl, lr, p, window, timer.partialTicks);
 

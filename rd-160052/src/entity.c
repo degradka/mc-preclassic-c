@@ -15,10 +15,11 @@ void Entity_init(Entity* e, Level* level) {
     Entity_resetPosition(e);
 }
 
-void Entity_setPosition(Entity* e, float x, float y, float z) {
+void Entity_setPosition(Entity* e, double x, double y, double z) {
     e->x = x; e->y = y; e->z = z;
     const float w = 0.3f, h = 0.9f;
-    e->boundingBox = AABB_create(x - w, y - h, z - w, x + w, y + h, z + w);
+    e->boundingBox = AABB_create((float)x - w, (float)y - h, (float)z - w,
+                                 (float)x + w, (float)y + h, (float)z + w);
     e->prevX = x; e->prevY = y; e->prevZ = z;
 }
 

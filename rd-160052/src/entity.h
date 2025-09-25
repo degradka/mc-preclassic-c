@@ -22,7 +22,7 @@ typedef struct Entity {
 } Entity;
 
 void Entity_init(Entity* e, Level* level);
-void Entity_setPosition(Entity* e, float x, float y, float z);
+void Entity_setPosition(Entity* e, double x, double y, double z);
 void Entity_resetPosition(Entity* e);
 void Entity_turn(Entity* e, float dx, float dy);
 void Entity_tick(Entity* e);
