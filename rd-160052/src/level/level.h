@@ -37,8 +37,6 @@ bool  Level_isTile(const Level* level, int x, int y, int z);
 bool  Level_isSolidTile(const Level* level, int x, int y, int z);
 bool  Level_isLightBlocker(const Level* level, int x, int y, int z);
 
-float Level_getBrightness(const Level* level, int x, int y, int z);
-
 void  calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ);
 
 void  Level_generateMap(Level* level);

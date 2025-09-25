@@ -104,13 +104,6 @@ bool Level_isLightBlocker(const Level* level, int x, int y, int z) {
     return Level_isSolidTile(level, x, y, z);
 }
 
-float Level_getBrightness(const Level* level, int x, int y, int z) {
-    const float dark = 0.8f, light = 1.0f;
-    if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height)
-        return light;
-    return (y < level->lightDepths[x + z * level->width]) ? dark : light;
-}
-
 bool Level_isTile(const Level* level, int x, int y, int z) {
     return Level_getTile(level, x, y, z) > 0;
 }
