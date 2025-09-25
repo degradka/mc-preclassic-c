@@ -50,7 +50,10 @@ void Zombie_tick(Zombie* z) {
     z->base.motionY *= 0.98f;
     z->base.motionZ *= 0.91f;
 
-    if (z->base.y < -100.0f) Entity_resetPosition(&z->base);
+    // Kill in void
+    if (z->base.y < -100.0f) {
+        Entity_remove(&z->base);
+    }
 
     if (z->base.onGround) {
         z->base.motionX *= 0.8f;

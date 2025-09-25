@@ -484,5 +484,13 @@ int main(void) {
 static void tick(Player* p, GLFWwindow* w) {
     (void)w;
     Player_tick(p, window);
-    for (int i = 0; i < mobCount; ++i) Zombie_tick(&mobs[i]);
+    for (int i = 0; i < mobCount; ) {
+        Zombie_tick(&mobs[i]);
+        if (mobs[i].base.removed) {
+            mobs[i] = mobs[mobCount - 1];
+            mobCount--;
+            continue;
+        }
+        i++;
+    }
 }

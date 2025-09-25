@@ -12,6 +12,7 @@ void Entity_init(Entity* e, Level* level) {
     e->motionX = e->motionY = e->motionZ = 0.0;
     e->onGround = false;
     e->heightOffset = 0.0f;
+    e->removed = false;
     Entity_resetPosition(e);
 }
 
@@ -87,4 +88,8 @@ void Entity_moveRelative(Entity* e, float x, float z, float speed) {
 
 bool Entity_isLit(const Entity* e) {
     return Level_isLit(e->level, (int)e->x, (int)e->y, (int)e->z);
+}
+
+void Entity_remove(Entity* e) {
+    e->removed = true;
 }
