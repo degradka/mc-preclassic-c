@@ -1,4 +1,4 @@
-// tile.c — block faces, per-face shading, and selection face
+// level/tile.c — block faces, per-face shading, and selection face
 
 #include "tile.h"
 

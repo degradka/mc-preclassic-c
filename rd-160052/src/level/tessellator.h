@@ -25,8 +25,10 @@ extern Tessellator TESSELLATOR;
 void Tessellator_init   (Tessellator* t);
 void Tessellator_vertex (Tessellator* t, float x, float y, float z);
 void Tessellator_texture(Tessellator* t, float u, float v);
+void Tessellator_vertexUV(Tessellator* t, float x, float y, float z, float u, float v);
 void Tessellator_color  (Tessellator* t, float r, float g, float b);
 void Tessellator_flush  (Tessellator* t);
 void Tessellator_clear  (Tessellator* t);
+
 
 #endif  // TESSELLATOR_H

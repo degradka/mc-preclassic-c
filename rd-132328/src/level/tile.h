@@ -1,4 +1,4 @@
-// tile.h — block faces, per-face shading, and selection face
+// level/tile.h — block faces, per-face shading, and selection face
 
 #ifndef TILE_H
 #define TILE_H

@@ -20,12 +20,23 @@ void Level_init(Level* level, int width, int height, int depth) {
         exit(EXIT_FAILURE);
     }
 
-    // default terrain: rock up to 2/3 depth, air above (Java parity)
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < depth; y++) {
             for (int z = 0; z < height; z++) {
                 int index = (y * level->height + z) * level->width + x;
-                level->blocks[index] = (byte)(y <= (depth * 2 / 3) ? 1 : 0);
+                if (y <= depth * 2 / 3) {
+                    if (y <= depth * 2 / 4) {
+                        level->blocks[index] = 1; // rock id = 1
+                    } else {
+                        if (y == depth * 2 / 3) {
+                            level->blocks[index] = 2; // grass id = 2
+                        } else {
+                            level->blocks[index] = 3; // dirt id = 3
+                        }
+                    }
+                } else {
+                    level->blocks[index] = 0; // air
+                }
             }
         }
     }
@@ -63,10 +74,7 @@ float Level_getBrightness(const Level* level, int x, int y, int z) {
 }
 
 bool Level_isTile(const Level* level, int x, int y, int z) {
-    if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height)
-        return false;
-    int index = (y * level->height + z) * level->width + x;
-    return level->blocks[index] != 0;
+    return Level_getTile(level, x, y, z) > 0;
 }
 
 bool Level_isSolidTile(const Level* level, int x, int y, int z) {
@@ -127,4 +135,16 @@ void level_setTile(Level* level, int x, int y, int z, int type) {
     level->blocks[(y * level->height + z) * level->width + x] = (byte)type;
     calcLightDepths(level, x, z, 1, 1);
     if (level->renderer) levelRenderer_tileChanged(level->renderer, x, y, z);
+}
+
+int Level_getTile(const Level* level, int x, int y, int z) {
+    if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height)
+        return 0;
+    int index = (y * level->height + z) * level->width + x;
+    return level->blocks[index];
+}
+
+bool Level_isLit(const Level* level, int x, int y, int z) {
+    return (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height) ||
+           (y >= level->lightDepths[x + z * level->width]);
 }

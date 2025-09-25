@@ -1,4 +1,4 @@
-// level.c — world storage, lighting columns, IO, and solid-cube queries
+// level/level.c — world storage, lighting columns, IO, and solid-cube queries
 
 #include "level.h"
 #include "levelrenderer.h"

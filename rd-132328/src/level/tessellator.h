@@ -1,4 +1,4 @@
-// tessellator.h — client-side batched immediate-mode for quads
+// level/tessellator.h — client-side batched immediate-mode for quads
 
 #ifndef TESSELLATOR_H
 #define TESSELLATOR_H

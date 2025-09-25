@@ -1,4 +1,4 @@
-// tessellator.c — client-side batched immediate-mode for quads
+// level/tessellator.c — client-side batched immediate-mode for quads
 
 #include <string.h>
 #include "tessellator.h"

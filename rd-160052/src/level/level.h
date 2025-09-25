@@ -46,4 +46,7 @@ void  Level_save(const Level* level);
 
 void  level_setTile(Level* level, int x, int y, int z, int type);
 
+int   Level_getTile(const Level* level, int x, int y, int z);
+bool  Level_isLit(const Level* level, int x, int y, int z);
+
 #endif  // LEVEL_H

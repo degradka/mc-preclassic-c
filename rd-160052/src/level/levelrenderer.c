@@ -8,7 +8,7 @@
 #include "level.h"
 #include "chunk.h"
 #include "frustum.h"
-#include "tile.h"
+#include "../tile/tile.h"
 #include "../timer.h"
 #include "../hitresult.h"
 #include <math.h>

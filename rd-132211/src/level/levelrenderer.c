@@ -1,4 +1,4 @@
-// levelrenderer.c — chunk grid, frustum culling, dirty-marking, and hit highlight
+// level/levelrenderer.c — chunk grid, frustum culling, dirty-marking, and hit highlight
 
 #include <GL/glew.h>
 #include <GL/glu.h>

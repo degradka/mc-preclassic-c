@@ -35,6 +35,11 @@ void Tessellator_texture(Tessellator* t, float u, float v) {
     t->u = u; t->v = v;
 }
 
+void Tessellator_vertexUV(Tessellator* t, float x, float y, float z, float u, float v) {
+    Tessellator_texture(t, u, v);
+    Tessellator_vertex(t, x, y, z);
+}
+
 void Tessellator_color(Tessellator* t, float r, float g, float b) {
     t->hasColor = 1;
     t->r = r; t->g = g; t->b = b;
