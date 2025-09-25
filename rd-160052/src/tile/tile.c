@@ -126,7 +126,6 @@ Tile TILE_GRASS;
 
 void Tile_registerAll(void) {
     memset((void*)gTiles, 0, sizeof(gTiles));
-    // ids follow the Java commit
     registerTile(&TILE_ROCK,       1,  1, NULL);
     registerTile(&TILE_GRASS,      2,  3, Grass_getTexture);
     registerTile(&TILE_DIRT,       3,  2, NULL);

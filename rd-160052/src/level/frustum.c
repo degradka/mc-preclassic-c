@@ -97,7 +97,7 @@ static int frustum_cubeIn(float x1, float y1, float z1, float x2, float y2, floa
     return 1;
 }
 
-int frustum_cubeInAABB(AABB* aabb) {
+int frustum_isVisible(const AABB* aabb) {
     return frustum_cubeIn((float)aabb->minX, (float)aabb->minY, (float)aabb->minZ,
                           (float)aabb->maxX, (float)aabb->maxY, (float)aabb->maxZ);
 }

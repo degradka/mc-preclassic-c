@@ -1,4 +1,4 @@
-// phys/entity.c — parent entity with physics and movement
+// entity.c — parent entity with physics and movement
 
 #include "entity.h"
 #include <math.h>
@@ -85,3 +85,6 @@ void Entity_moveRelative(Entity* e, float x, float z, float speed) {
     e->motionZ += z * c + x * s;
 }
 
+bool Entity_isLit(const Entity* e) {
+    return Level_isLit(e->level, (int)e->x, (int)e->y, (int)e->z);
+}

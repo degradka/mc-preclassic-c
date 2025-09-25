@@ -14,7 +14,7 @@ typedef struct Frustum {
 
 extern Frustum frustum;
 
-int  frustum_cubeInAABB(AABB* aabb);
+int  frustum_isVisible(const AABB* aabb);
 void frustum_calculate(void);
 
 #endif // FRUSTUM_H

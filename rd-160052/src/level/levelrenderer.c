@@ -45,7 +45,7 @@ void LevelRenderer_render(const LevelRenderer* r, int layer) {
 
     int total = r->chunkAmountX * r->chunkAmountY * r->chunkAmountZ;
     for (int i = 0; i < total; ++i) {
-        if (frustum_cubeInAABB(&r->chunks[i].boundingBox)) {
+        if (frustum_isVisible(&r->chunks[i].boundingBox)) {
             Chunk_render(&r->chunks[i], layer);
         }
     }

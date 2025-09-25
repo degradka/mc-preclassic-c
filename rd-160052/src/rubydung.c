@@ -14,6 +14,7 @@
 
 #include "level/level.h"
 #include "level/levelrenderer.h"
+#include "level/frustum.h"
 #include "tile/tile.h"
 #include "textures.h"
 #include "player.h"
@@ -392,10 +393,24 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
 
     LevelRenderer_render(lr, 0);    // lit layer
 
-    for (int i = 0; i < mobCount; i++) Zombie_render(&mobs[i], t);
+    // Zombies in sunlight (lit)
+    for (int i = 0; i < mobCount; ++i) {
+        const Zombie* z = &mobs[i];
+        if (Entity_isLit(&z->base) && frustum_isVisible(&z->base.boundingBox)) {
+            Zombie_render(z, t);
+        }
+    }
 
     glEnable(GL_FOG);
     LevelRenderer_render(lr, 1);    // shadow layer
+
+    // Zombies in shadow (not lit)
+    for (int i = 0; i < mobCount; ++i) {
+        const Zombie* z = &mobs[i];
+        if (!Entity_isLit(&z->base) && frustum_isVisible(&z->base.boundingBox)) {
+            Zombie_render(z, t);
+        }
+    }
 
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
