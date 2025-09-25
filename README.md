@@ -32,6 +32,30 @@ I kept file names and code organization close to the original repo:
 - Minimal immediate-mode box builder used for characters.
 - A simple biped (“zombie/human”) that wanders the world with basic hopping/striding animation.
 
+### rd-20090515
+- General
+    - Game tick is now 20 ticks per second
+    - Fullscreen mode
+    - Custom textures for each face of a tile
+    - Added stone, dirt and wood tile
+- Entity
+    - Reduced zombie spawn amount to 10
+    - Zombies who fall below y level -100 are now removed from the world
+    - Modified physics of entities
+    - Zombies now appear darker in the shadow
+- World
+    - Implemented perlin noise world generation
+    - Grass can grow on dirt tiles in sunlight
+- Controls
+    - Added hotkey "G" to spawn zombies
+    - Block picking using the number keys 1-4
+- HUD
+    - Crosshair
+    - Picked tile in the top right corner
+
+### rd-160052
+- Add tile destroy particles
+
 ---
 
 ## Building
