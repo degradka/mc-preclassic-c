@@ -1,19 +1,18 @@
-// tile/tile.h — tile registry, per-face textures, render helpers
+// level/tile/tile.h — tile registry, per-face textures, render helpers
 
 #ifndef TILE_H
 #define TILE_H
 
-#include "../level/level.h"
-#include "../level/tessellator.h"
+#include "../level.h"
+#include "..//tessellator.h"
 
 typedef struct Tile Tile;
 
 struct Tile {
     int id;
-    int textureId; // default atlas slot
-    int (*getTexture)(const Tile* self, int face);
+    int textureId;
+    int  (*getTexture)(const Tile* self, int face);
     void (*render)(const Tile* self, Tessellator* t, const Level* lvl, int layer, int x, int y, int z);
-    // random tick hook (may be NULL)
     void (*onTick)(const Tile* self, Level* lvl, int x, int y, int z);
 };
 

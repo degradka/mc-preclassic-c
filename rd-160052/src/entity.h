@@ -16,6 +16,8 @@ typedef struct Entity {
     float  xRotation, yRotation;
 
     AABB   boundingBox;
+    float boundingBoxWidth;
+    float boundingBoxHeight;
 
     bool   onGround;
     float  heightOffset;
@@ -31,6 +33,7 @@ void Entity_move(Entity* e, double dx, double dy, double dz);
 void Entity_moveRelative(Entity* e, float x, float z, float speed);
 bool Entity_isLit(const Entity* e);
 void Entity_remove(Entity* e);
+void Entity_setSize(Entity* e, float width, float height);
 
 #endif
 

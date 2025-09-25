@@ -1,7 +1,7 @@
 // level/chunk.c — chunk display lists, rebuild & render
 
 #include "chunk.h"
-#include "../tile/tile.h"
+#include "tile/tile.h"
 #include "tessellator.h"
 #include "../textures.h"
 #include "../timer.h"

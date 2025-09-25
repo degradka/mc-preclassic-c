@@ -2,7 +2,7 @@
 
 #include "level.h"
 #include "levelrenderer.h"
-#include "../tile/tile.h"
+#include "tile/tile.h"
 #include "perlin.h"
 
 #include <zlib.h>
@@ -174,11 +174,16 @@ void Level_save(const Level* level) {
     gzclose(f);
 }
 
-void level_setTile(Level* level, int x, int y, int z, int type) {
-    if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height) return;
-    level->blocks[(y * level->height + z) * level->width + x] = (byte)type;
+bool level_setTile(Level* level, int x, int y, int z, int type) {
+    if (x < 0 || y < 0 || z < 0 || x >= level->width || y >= level->depth || z >= level->height) return false;
+
+    int index = (y * level->height + z) * level->width + x;
+    if (level->blocks[index] == (byte)type) return false;
+
+    level->blocks[index] = (byte)type;
     calcLightDepths(level, x, z, 1, 1);
     if (level->renderer) levelRenderer_tileChanged(level->renderer, x, y, z);
+    return true;
 }
 
 int Level_getTile(const Level* level, int x, int y, int z) {

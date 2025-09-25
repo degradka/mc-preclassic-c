@@ -15,7 +15,7 @@
 #include "level/level.h"
 #include "level/levelrenderer.h"
 #include "level/frustum.h"
-#include "tile/tile.h"
+#include "level/tile/tile.h"
 #include "textures.h"
 #include "player.h"
 #include "character/zombie.h"
@@ -24,12 +24,12 @@
 
 #define MAX_MOBS 100
 
-static GLFWwindow*   window;
-static Level         level;
-static LevelRenderer levelRenderer;
-static Player        player;
-static Timer         timer;
-static Zombie        mobs[MAX_MOBS];
+static GLFWwindow*    window;
+static Level          level;
+static LevelRenderer  levelRenderer;
+static Player         player;
+static Timer          timer;
+static Zombie         mobs[MAX_MOBS];
 
 static int mobCount = 0;
 
@@ -49,8 +49,8 @@ static int gWinWidth  = 1024;
 static int gWinHeight = 768;
 static int gIsFullscreen = 1;
 
-static GLfloat fogColorDaylight[4] = { 0.50f, 0.80f, 1.00f, 1.0f };
-static GLfloat fogColorShadow  [4] = { 14.0f/255.0f, 11.0f/255.0f, 10.0f/255.0f, 1.0f };
+static GLfloat fogColorDaylight[4] = { 254.0f/255.0f, 251.0f/255.0f, 250.0f/255.0f, 1.0f };
+static GLfloat fogColorShadow  [4] = {  14.0f/255.0f,  11.0f/255.0f,  10.0f/255.0f, 1.0f };
 
 static int      isHitNull = 1;
 static HitResult hitResult;
@@ -66,12 +66,24 @@ static void keyCallback(GLFWwindow* w, int key, int scancode, int action, int mo
     }
 }
 
-static void initFogWithColor(const GLfloat color[4]) {
+static void setupFog(int type) {
     glEnable(GL_FOG);
-    glFogi(GL_FOG_MODE, GL_LINEAR);
-    glFogf(GL_FOG_START, -10.0f);
-    glFogf(GL_FOG_END,   20.0f);
-    glFogfv(GL_FOG_COLOR, color);
+    glFogi(GL_FOG_MODE, GL_EXP);
+
+    if (type == 0) { // daylight
+        glFogf(GL_FOG_DENSITY, 0.001f);
+        glFogfv(GL_FOG_COLOR, fogColorDaylight);
+        glDisable(GL_LIGHTING);
+        glDisable(GL_COLOR_MATERIAL);
+    } else {         // shadow
+        glFogf(GL_FOG_DENSITY, 0.06f);
+        glFogfv(GL_FOG_COLOR, fogColorShadow);
+        glEnable(GL_LIGHTING);
+        glEnable(GL_COLOR_MATERIAL);
+
+        GLfloat ambient[4] = { 0.6f, 0.6f, 0.6f, 1.0f };
+        glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambient);
+    }
 }
 
 /* --- boot/shutdown ----------------------------------------------------------- */
@@ -404,7 +416,7 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
 
     setupCamera(p, t);
 
-    initFogWithColor(fogColorDaylight);
+    setupFog(0);
     LevelRenderer_render(lr, 0);    // lit layer
 
     // Zombies in sunlight (lit)
@@ -415,7 +427,7 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
         }
     }
 
-    initFogWithColor(fogColorShadow);
+    setupFog(1);
     LevelRenderer_render(lr, 1);    // shadow layer
 
     // Zombies in shadow (not lit)

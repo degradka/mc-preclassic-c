@@ -12,13 +12,15 @@ void Entity_init(Entity* e, Level* level) {
     e->motionX = e->motionY = e->motionZ = 0.0;
     e->onGround = false;
     e->heightOffset = 0.0f;
-    e->removed = false;
+    e->boundingBoxWidth  = 0.6f;
+    e->boundingBoxHeight = 1.8f;
     Entity_resetPosition(e);
 }
 
 void Entity_setPosition(Entity* e, double x, double y, double z) {
     e->x = x; e->y = y; e->z = z;
-    const float w = 0.3f, h = 0.9f;
+    const float w = e->boundingBoxWidth  * 0.5f;
+    const float h = e->boundingBoxHeight * 0.5f;
     e->boundingBox = AABB_create((float)x - w, (float)y - h, (float)z - w,
                                  (float)x + w, (float)y + h, (float)z + w);
     e->prevX = x; e->prevY = y; e->prevZ = z;
@@ -92,4 +94,9 @@ bool Entity_isLit(const Entity* e) {
 
 void Entity_remove(Entity* e) {
     e->removed = true;
+}
+
+void Entity_setSize(Entity* e, float width, float height) {
+    e->boundingBoxWidth  = width;
+    e->boundingBoxHeight = height;
 }

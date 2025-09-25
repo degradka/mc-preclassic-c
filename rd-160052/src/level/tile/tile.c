@@ -1,4 +1,4 @@
-// tile/tile.c — registry, per-face textures, render helpers
+// level/tile/tile.c — registry, per-face textures, render helpers
 
 #include "tile.h"
 #include <string.h>
