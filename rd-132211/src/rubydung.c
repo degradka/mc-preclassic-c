@@ -253,11 +253,11 @@ static void handleBlockClicks(GLFWwindow* w) {
     int left  = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT);
     int right = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT);
 
-    if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
+    if (right == GLFW_PRESS && prevRight == GLFW_RELEASE && !isHitNull) {
         level_setTile(&level, hitResult.x, hitResult.y, hitResult.z, 0);
     }
 
-    if (right == GLFW_PRESS && prevRight == GLFW_RELEASE && !isHitNull) {
+    if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
         int nx = 0, ny = 0, nz = 0;
         switch (hitResult.f) {
             case 0: ny = -1; break; // bottom

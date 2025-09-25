@@ -15,21 +15,20 @@
 #include "level/level.h"
 #include "level/levelrenderer.h"
 #include "player.h"
+#include "character/zombie.h"
 #include "timer.h"
 #include "hitresult.h"
-#include "textures.h"
-#include "character/zombie.h"
 
-#define MAX_ZOMBIES 16
+#define MAX_MOBS 100
 
 static GLFWwindow*   window;
 static Level         level;
 static LevelRenderer levelRenderer;
 static Player        player;
 static Timer         timer;
-static Zombie gZombies[MAX_ZOMBIES];
+static Zombie        mobs[MAX_MOBS];
 
-static int    gZombieCount = 0;
+static int mobCount = 0;
 
 static int prevLeft  = GLFW_RELEASE;
 static int prevRight = GLFW_RELEASE;
@@ -114,24 +113,13 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     calcLightDepths(lvl, 0, 0, lvl->width, lvl->height);
 
     Player_init(p, lvl);
-
-    Zombie_loadTexture();
-
-    // simple spawn: put a 4×4 grid around player spawn
-    gZombieCount = 0;
-    for (int gx = 0; gx < 2; ++gx) {
-        for (int gz = 0; gz < 2; ++gz) {
-            if (gZombieCount >= MAX_ZOMBIES) break;
-            int zx = 8 + gx * 8;
-            int zz = 8 + gz * 8;
-
-            // stand on surface using lightDepths as “ground”
-            int groundY = lvl->lightDepths[zx + zz * lvl->width] + 1;
-            Zombie_init(&gZombies[gZombieCount++],
-                        (float)zx + 0.5f,
-                        (float)groundY,
-                        (float)zz + 0.5f);
-        }
+    
+    mobCount = MAX_MOBS;
+    for (int i = 0; i < mobCount; i++) {
+        double x = (double)rand()/RAND_MAX * lvl->width;
+        double y = lvl->depth + 3.0;
+        double z = (double)rand()/RAND_MAX * lvl->height;
+        Zombie_init(&mobs[i], lvl, x, y, z);
     }
 
     Timer_init(&timer, 60.0f);
@@ -280,11 +268,11 @@ static void handleBlockClicks(GLFWwindow* w) {
     int left  = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT);
     int right = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT);
 
-    if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
+    if (right == GLFW_PRESS && prevRight == GLFW_RELEASE && !isHitNull) {
         level_setTile(&level, hitResult.x, hitResult.y, hitResult.z, 0);
     }
 
-    if (right == GLFW_PRESS && prevRight == GLFW_RELEASE && !isHitNull) {
+    if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
         int nx = 0, ny = 0, nz = 0;
         switch (hitResult.f) {
             case 0: ny = -1; break; // bottom
@@ -318,17 +306,15 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
     initFog();
 
     LevelRenderer_render(lr, 0);    // lit layer
+
+    for (int i = 0; i < mobCount; i++) Zombie_render(&mobs[i], t);
+
     glEnable(GL_FOG);
     LevelRenderer_render(lr, 1);    // shadow layer
 
     glDisable(GL_TEXTURE_2D);
-    if (!isHitNull) LevelRenderer_renderHit(lr, &hitResult);
 
-    // draw zombie (re-enable texturing)
-    glEnable(GL_TEXTURE_2D);
-    for (int i = 0; i < gZombieCount; ++i) {
-        Zombie_render(&gZombies[i], t);
-    }
+    if (!isHitNull) LevelRenderer_renderHit(lr, &hitResult);
 
     glfwSwapBuffers(window);
 }
@@ -350,8 +336,6 @@ static void run(Level* lvl, LevelRenderer* lr, Player* p) {
 
         Timer_advanceTime(&timer);
         for (int i = 0; i < timer.ticks; ++i) tick(p, window);
-
-        for (int i = 0; i < gZombieCount; ++i) Zombie_tick(&gZombies[i]);
 
         pick(timer.partialTicks);
         handleBlockClicks(window);
@@ -380,4 +364,5 @@ int main(void) {
 static void tick(Player* p, GLFWwindow* w) {
     (void)w;
     Player_tick(p, window);
+    for (int i = 0; i < mobCount; ++i) Zombie_tick(&mobs[i]);
 }

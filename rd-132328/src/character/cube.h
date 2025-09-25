@@ -1,24 +1,20 @@
-// character/cube.h — textured box model part
+// character/cube.h
 
-#ifndef CHARACTER_CUBE_H
-#define CHARACTER_CUBE_H
+#ifndef CUBE_H
+#define CUBE_H
 
-#include <GL/glew.h>
-#include "../level/tessellator.h"
+#include "polygon.h"
 
-typedef struct Cube {
-    int u, v;
-
-    float x0, y0, z0;
-    float x1, y1, z1;
-
-    float px, py, pz;
+typedef struct {
+    Polygon polys[6];
+    float   x, y, z;
+    float   xRot, yRot, zRot;
+    int     texOffX, texOffY;
 } Cube;
 
-void Cube_init(Cube* c, int u, int v);
-void Cube_addBox(Cube* c, float x, float y, float z, int w, int h, int d);
-void Cube_setPosition(Cube* c, float px, float py, float pz);
+void  Cube_init(Cube* c, int texOffX, int texOffY);
+Cube* Cube_addBox(Cube* c, float ox, float oy, float oz, int w, int h, int d);
+void  Cube_setPos(Cube* c, float x, float y, float z);
+void  Cube_render(const Cube* c);
 
-void Cube_render(const Cube* c, Tessellator* t);
-
-#endif /* CHARACTER_CUBE_H */
+#endif

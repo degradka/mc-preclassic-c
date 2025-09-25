@@ -57,3 +57,7 @@ dkms.conf
 # Output files
 rubydung
 *.dat
+
+# Resources folder for debug
+rd-132211/src/resources
+rd-132328/src/resources

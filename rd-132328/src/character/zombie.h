@@ -1,18 +1,22 @@
-// character/zombie.h — simple human model entity
+// character/zombie.h
 
-#ifndef CHARACTER_ZOMBIE_H
-#define CHARACTER_ZOMBIE_H
+#ifndef ZOMBIE_H
+#define ZOMBIE_H
 
-#include <GL/glew.h>
+#include "../entity.h"
+#include "cube.h"
 
-typedef struct Zombie {
-    float x, y, z;
-    float yaw;
+typedef struct {
+    Entity base;
+    Cube   head, body, rightArm, leftArm, rightLeg, leftLeg;
+    double rotation;
+    double rotationMotionFactor;
+    float  timeOffset;
+    float  speed;
 } Zombie;
 
-void Zombie_loadTexture(void);
-void Zombie_init(Zombie* z, float x, float y, float zpos);
-void Zombie_render(const Zombie* z, float partialTicks);
+void Zombie_init(Zombie* z, Level* level, double x, double y, double zpos);
 void Zombie_tick(Zombie* z);
+void Zombie_render(const Zombie* z, float partialTicks);
 
-#endif /* CHARACTER_ZOMBIE_H */
+#endif

@@ -3,27 +3,34 @@
 
 ---
 
-![screenshot](.assets/level.jpg)  
+![screenshot](.assets/rd-132211_level.jpg)  
 
 ---
 
 ## What the hell is this?
-This is me being insane enough to rewrite the very first public Minecraft version  
-**rd-132211**, released May 2009, in plain C.  
+This is me being insane enough to rewrite the very first public Minecraft versions  
+**rd-132211**, **rd-132328** released May 2009, in plain C.
 
 Why? Because I can.  
 And because the original was Java, and I wanted to see how far I could push a C port.  
 
 I kept file names and code organization close to the original repo:  
-[thecodeofnotch/rd-132211](https://github.com/thecodeofnotch/rd-132211).  
+[thecodeofnotch/rd-132211](https://github.com/thecodeofnotch/rd-132211).
 
 ---
 
-## Features
+## Versions covered
+
+### rd-132211 (base)
 - Break and place tiles  
 - White flashing overlay on the block you’re aiming at  
 - Save the level by pressing **Enter**  
 - Respawn/reset position by pressing **R**  
+
+### rd-132328
+- Player movement/collision factored into a common `Entity` base (player now “inherits” physics).
+- Minimal immediate-mode box builder used for characters.
+- A simple biped (“zombie/human”) that wanders the world with basic hopping/striding animation.
 
 ---
 

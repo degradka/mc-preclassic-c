@@ -11,9 +11,9 @@ BUILD ?= debug
 
 # Sources / Objects
 SRC = rubydung.c player.c textures.c timer.c  hitresult.c \
-      entity.c \ level/chunk.c level/level.c level/levelrenderer.c \
+      level/chunk.c level/level.c level/levelrenderer.c \
       level/tessellator.c level/tile.c level/frustum.c phys/aabb.c \
-      character/cube.c character/zombie.c
+      entity.c character/zombie.c character/polygon.c character/cube.c
 OBJ := $(SRC:.c=.o)
 DEP := $(OBJ:.o=.d)
 
