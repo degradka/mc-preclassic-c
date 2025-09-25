@@ -14,6 +14,7 @@
 
 #include "level/level.h"
 #include "level/levelrenderer.h"
+#include "tile/tile.h"
 #include "player.h"
 #include "character/zombie.h"
 #include "timer.h"
@@ -107,6 +108,8 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPos(window, 0, 0);
     glfwSetKeyCallback(window, keyCallback);
+
+    Tile_registerAll();
 
     Level_init(lvl, 256, 256, 64);
     LevelRenderer_init(lr, lvl);

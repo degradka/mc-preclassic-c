@@ -2,6 +2,9 @@
 
 #include "level.h"
 #include "levelrenderer.h"
+#include "../tile/tile.h"
+#include "perlin.h"
+
 #include <zlib.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,29 +23,12 @@ void Level_init(Level* level, int width, int height, int depth) {
         exit(EXIT_FAILURE);
     }
 
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < depth; y++) {
-            for (int z = 0; z < height; z++) {
-                int index = (y * level->height + z) * level->width + x;
-                if (y <= depth * 2 / 3) {
-                    if (y <= depth * 2 / 4) {
-                        level->blocks[index] = 1; // rock id = 1
-                    } else {
-                        if (y == depth * 2 / 3) {
-                            level->blocks[index] = 2; // grass id = 2
-                        } else {
-                            level->blocks[index] = 3; // dirt id = 3
-                        }
-                    }
-                } else {
-                    level->blocks[index] = 0; // air
-                }
-            }
-        }
+    bool mapLoaded = Level_load(level);
+    if (!mapLoaded) {
+        Level_generateMap(level);
     }
 
-    // load saved blocks (overwrites defaults if file exists)
-    Level_load(level);
+    calcLightDepths(level, 0, 0, width, height);
 }
 
 void calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ) {
@@ -60,6 +46,58 @@ void calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ) {
             }
         }
     }
+}
+
+void Level_generateMap(Level* level) {
+    int w = level->width, h = level->height, d = level->depth;
+
+    int* first  = (int*)malloc((size_t)w * h * sizeof(int));
+    int* second = (int*)malloc((size_t)w * h * sizeof(int));
+    int* cliff  = (int*)malloc((size_t)w * h * sizeof(int));
+    int* rock   = (int*)malloc((size_t)w * h * sizeof(int));
+    if (!first || !second || !cliff || !rock) {
+        fprintf(stderr, "Perlin temp alloc failed\n");
+        if (first)  free(first);
+        if (second) free(second);
+        if (cliff)  free(cliff);
+        if (rock)   free(rock);
+        return;
+    }
+
+    Perlin_read(w, h, 0, first);
+    Perlin_read(w, h, 0, second);
+    Perlin_read(w, h, 1, cliff);
+    Perlin_read(w, h, 1, rock);
+
+    for (int x = 0; x < w; ++x) {
+        for (int y = 0; y < d; ++y) {
+            for (int z = 0; z < h; ++z) {
+                int idx2D = x + z * w;
+                int f = first [idx2D];
+                int s = second[idx2D];
+
+                // If cliff noise < 128, force to first height
+                if (cliff[idx2D] < 128) s = f;
+
+                int maxLevelHeight = ( (s > f ? s : f) ) / 8 + d / 3;
+                int maxRockHeight  =  rock[idx2D] / 8 + d / 3;
+                if (maxRockHeight > maxLevelHeight - 2) {
+                    maxRockHeight = maxLevelHeight - 2;
+                }
+
+                int index = (y * h + z) * w + x;
+                int id = 0;
+
+                if (y == maxLevelHeight) id = 2; // grass
+                if (y <  maxLevelHeight) id = 3; // dirt
+                if (y <= maxRockHeight)  id = 1; // rock
+
+                level->blocks[index] = (unsigned char)id;
+            }
+        }
+    }
+
+    free(first); free(second); free(cliff); free(rock);
 }
 
 bool Level_isLightBlocker(const Level* level, int x, int y, int z) {
@@ -116,11 +154,24 @@ ArrayList_AABB Level_getCubes(const Level* level, const AABB* bb) {
     return out;
 }
 
-void Level_load(Level* level) {
+bool Level_load(Level* level) {
     gzFile f = gzopen("level.dat", "rb");
-    if (!f) return;
-    gzread(f, level->blocks, (unsigned)(level->width * level->height * level->depth));
+    if (!f) return false;
+
+    size_t total = (size_t)level->width * level->height * level->depth;
+    int readBytes = gzread(f, level->blocks, (unsigned)total);
     gzclose(f);
+
+    if (readBytes != (int)total) {
+        // corrupted/short file
+        return false;
+    }
+
+    // notify renderer for a full refresh
+    if (level->renderer) {
+        levelRenderer_allChanged(level, level->renderer);
+    }
+    return true;
 }
 
 void Level_save(const Level* level) {

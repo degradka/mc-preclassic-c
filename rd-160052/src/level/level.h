@@ -41,7 +41,9 @@ float Level_getBrightness(const Level* level, int x, int y, int z);
 
 void  calcLightDepths(Level* level, int minX, int minZ, int maxX, int maxZ);
 
-void  Level_load(Level* level);
+void  Level_generateMap(Level* level);
+
+bool  Level_load(Level* level);
 void  Level_save(const Level* level);
 
 void  level_setTile(Level* level, int x, int y, int z, int type);

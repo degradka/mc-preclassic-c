@@ -1,4 +1,5 @@
-// tile/tile.c — registry + per-face textured rendering (rd-160052 parity)
+// tile/tile.c — registry, per-face textures, render helpers
+
 #include "tile.h"
 #include <string.h>
 
@@ -15,6 +16,17 @@ static inline int shouldRenderFace(const Level* lvl, int x, int y, int z, int la
     return (!Level_isSolidTile(lvl, x, y, z)) && ((lit ^ (layer == 1)) != 0);
 }
 
+// helper to compute UVs from atlas slot (16x16 tiles on 256x256)
+static void calcUV(int slot, float* u0, float* v0, float* u1, float* v1) {
+    // 16x16 tiles in a 256x256 atlas
+    float minU = (slot % 16) / 16.0f;
+    float minV = (slot / 16) / 16.0f;
+    *u0 = minU;
+    *v0 = minV;
+    *u1 = minU + 16.0f / 256.0f;
+    *v1 = minV + 16.0f / 256.0f;
+}
+
 static void Tile_render_shared(const Tile* self, Tessellator* t, const Level* lvl, int layer, int x, int y, int z) {
     const float shadeX = 0.6f, shadeY = 1.0f, shadeZ = 0.8f;
 
@@ -22,22 +34,12 @@ static void Tile_render_shared(const Tile* self, Tessellator* t, const Level* lv
     const float minY = (float)y, maxY = (float)y + 1.0f;
     const float minZ = (float)z, maxZ = (float)z + 1.0f;
 
-    // helper to compute UVs from atlas slot (16x16 tiles on 256x256)
-    auto calcUV = [](int slot, float* u0, float* v0, float* u1, float* v1){
-        const float at = 16.0f;
-        const float tex = 256.0f;
-        float uu = (float)(slot % 16) / 16.0f;
-        float vv = (float)(slot / 16) / 16.0f;
-        *u0 = uu;                *v0 = vv;
-        *u1 = uu + at / tex;     *v1 = vv + at / tex;
-    };
-
     float u0, v0, u1, v1;
 
     // bottom (face 0)
     if (shouldRenderFace(lvl, x, y - 1, z, layer)) {
-        Tessellator_color(t, shadeY, shadeY, shadeY);
-        calcUV(self->getTexture(self, 0), &u0, &v0, &u1, &v1);
+        Tessellator_color(t, 1.0f, 1.0f, 1.0f);
+        calcUV(self->getTexture(self, 0), &u0,&v0,&u1,&v1);
         Tessellator_vertexUV(t, minX, minY, maxZ, u0, v1);
         Tessellator_vertexUV(t, minX, minY, minZ, u0, v0);
         Tessellator_vertexUV(t, maxX, minY, minZ, u1, v0);
