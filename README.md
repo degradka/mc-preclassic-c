@@ -91,10 +91,8 @@ It may not compile, I'll need to check for myself first.
 
 ## References
 - [Wiki: Java Edition pre-Classic rd-132211](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-132211)  
-- [Original source drop by Notch](https://github.com/thecodeofnotch/rd-132211)  
+- [The Code of Notch repo](https://github.com/thecodeofnotch/rd-132211)  
 
 ---
 
-If you think this is a dumb project, you’re right. But it runs.  
-
-Now moving on to **rd-132328** — next version in the timeline.
+If you think this is a dumb project, you’re right. But it runs.
