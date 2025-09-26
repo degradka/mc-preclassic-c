@@ -70,7 +70,7 @@ Tested on **Windows**, works fine.
 ### Windows
 You’ll need MinGW (or similar). Then:  
 ```bash
-make BUILD=release
+make
 ```
 
 To run the game, make sure these DLLs are in the same folder as the exe:
