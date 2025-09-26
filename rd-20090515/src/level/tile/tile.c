@@ -1,8 +1,6 @@
 // level/tile/tile.c — registry, per-face textures, render helpers
 
 #include "tile.h"
-#include "../../particle/particleengine.h"
-#include "../../particle/particle.h"
 #include <string.h>
 
 static int Tile_default_getTexture(const Tile* self, int face) {
@@ -194,25 +192,5 @@ void Face_render(Tessellator* t, int x, int y, int z, int face) {
         Tessellator_vertex(t, maxX, minY, minZ);
         Tessellator_vertex(t, maxX, maxY, minZ);
         Tessellator_vertex(t, maxX, maxY, maxZ);
-    }
-}
-
-void Tile_onDestroy(const Tile* self, Level* lvl, int x, int y, int z, ParticleEngine* engine) {
-    const int spread = 4;
-
-    for (int ox = 0; ox < spread; ++ox)
-    for (int oy = 0; oy < spread; ++oy)
-    for (int oz = 0; oz < spread; ++oz) {
-        float tx = x + (ox + 0.5f) / (float)spread;
-        float ty = y + (oy + 0.5f) / (float)spread;
-        float tz = z + (oz + 0.5f) / (float)spread;
-
-        float mx = tx - x - 0.5f;
-        float my = ty - y - 0.5f;
-        float mz = tz - z - 0.5f;
-
-        Particle p;
-        Particle_init(&p, lvl, tx, ty, tz, mx, my, mz, self->textureId);
-        ParticleEngine_add(engine, &p);
     }
 }

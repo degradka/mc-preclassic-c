@@ -6,8 +6,6 @@
 #include "../level.h"
 #include "..//tessellator.h"
 
-struct ParticleEngine; typedef struct ParticleEngine ParticleEngine;
-
 typedef struct Tile Tile;
 
 struct Tile {
@@ -30,9 +28,6 @@ extern Tile TILE_WOOD;      // id=5
 
 void Tile_registerAll(void);
 
-// Helper to render a plain, untextured face (for highlights)
 void Face_render(Tessellator* t, int x, int y, int z, int face);
-
-void Tile_onDestroy(const Tile* self, Level* lvl, int x, int y, int z, ParticleEngine* engine);
 
 #endif

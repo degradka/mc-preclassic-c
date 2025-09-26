@@ -14,8 +14,7 @@ SRC = rubydung.c player.c textures.c timer.c  hitresult.c \
       level/chunk.c level/level.c level/levelrenderer.c \
       level/tessellator.c level/tile/tile.c level/frustum.c phys/aabb.c \
       entity.c character/zombie.c character/polygon.c character/cube.c \
-      level/perlin.c particle/particleengine.c particle/particle.c \
-      character/zombiemodel.c
+      level/perlin.c character/zombiemodel.c
 
 OBJ := $(SRC:.c=.o)
 DEP := $(OBJ:.o=.d)

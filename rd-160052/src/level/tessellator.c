@@ -46,7 +46,7 @@ void Tessellator_color(Tessellator* t, float r, float g, float b) {
 }
 
 void Tessellator_flush(Tessellator* t) {
-    // Reset client states so stale arrays (e.g., colors) don't affect us
+    // reset client states so stale arrays (e.g., colors) don't affect us
     glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 

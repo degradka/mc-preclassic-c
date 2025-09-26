@@ -17,6 +17,7 @@
 #include "level/frustum.h"
 #include "level/tile/tile.h"
 #include "textures.h"
+#include "particle/particleengine.h"
 #include "player.h"
 #include "character/zombie.h"
 #include "timer.h"
@@ -30,6 +31,7 @@ static LevelRenderer  levelRenderer;
 static Player         player;
 static Timer          timer;
 static Zombie         mobs[MAX_MOBS];
+static ParticleEngine particleEngine;
 
 static int mobCount = 0;
 
@@ -143,6 +145,8 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     calcLightDepths(lvl, 0, 0, lvl->width, lvl->height);
 
     Player_init(p, lvl);
+
+    ParticleEngine_init(&particleEngine, lvl, (GLuint)texTerrain);
 
     mobCount = 0;
     for (int i = 0; i < 10 && i < MAX_MOBS; ++i) {
@@ -372,7 +376,17 @@ static void handleBlockClicks(GLFWwindow* w) {
     int right = glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_RIGHT);
 
     if (right == GLFW_PRESS && prevRight == GLFW_RELEASE && !isHitNull) {
-        level_setTile(&level, hitResult.x, hitResult.y, hitResult.z, 0);
+        // capture previous tile
+        int prevId = Level_getTile(&level, hitResult.x, hitResult.y, hitResult.z);
+        const Tile* prevTile = (prevId >= 0 && prevId < 256) ? gTiles[prevId] : NULL;
+
+        // destroy the tile
+        bool changed = level_setTile(&level, hitResult.x, hitResult.y, hitResult.z, 0);
+
+        // spawn particles
+        if (prevTile && changed) {
+            Tile_onDestroy(prevTile, &level, hitResult.x, hitResult.y, hitResult.z, &particleEngine);
+        }
     }
 
     if (left == GLFW_PRESS && prevLeft == GLFW_RELEASE && !isHitNull) {
@@ -427,6 +441,8 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
         }
     }
 
+    ParticleEngine_render(&particleEngine, p, t, 0);
+
     setupFog(1);
     LevelRenderer_render(lr, 1);    // shadow layer
 
@@ -437,6 +453,8 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
             Zombie_render(z, t);
         }
     }
+
+    ParticleEngine_render(&particleEngine, p, t, 1);
 
     glDisable(GL_LIGHTING);
     glDisable(GL_TEXTURE_2D);
@@ -498,6 +516,8 @@ static void tick(Player* p, GLFWwindow* w) {
 
     // random tile ticks (grass growth/decay lives here)
     Level_onTick(&level);
+
+    ParticleEngine_onTick(&particleEngine);
 
     Player_onTick(p, window);
     for (int i = 0; i < mobCount; ) {
