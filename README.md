@@ -27,10 +27,24 @@ I kept file names and code organization close to the original repos:
 - Save the level by pressing **Enter**  
 - Respawn/reset position by pressing **R**  
 
+<details>
+<summary>Screenshot</summary>
+
+![rd-132211](.assets/rd-132211_level.jpg)
+
+</details>
+
 ### rd-132328
 - Player movement/collision factored into a common `Entity` base (player now “inherits” physics).
 - Minimal immediate-mode box builder used for characters.
 - A simple biped (“zombie/human”) that wanders the world with basic hopping/striding animation.
+
+<details>
+<summary>Screenshot</summary>
+
+![rd-132328](.assets/rd-132328_level.jpg)
+
+</details>
 
 ### rd-20090515
 - General
@@ -53,14 +67,35 @@ I kept file names and code organization close to the original repos:
     - Crosshair
     - Picked tile in the top right corner
 
+<details>
+<summary>Screenshot</summary>
+
+![rd-20090515](.assets/rd-20090515_level.jpg)
+
+</details>
+
 ### rd-160052
 - Add tile destroy particles
+
+<details>
+<summary>Screenshot</summary>
+
+![rd-160052](.assets/rd-160052_level.jpg)
+
+</details>
 
 ### rd-161348
 - Added bush tile
 - Changed HUD scale
 - Flipped tile preview
 - Rotate particles to the y camera position
+
+<details>
+<summary>Screenshot</summary>
+
+![rd-161348](.assets/rd-161348_level.jpg)
+
+</details>
 
 ---
 
