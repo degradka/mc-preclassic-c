@@ -80,12 +80,21 @@ To run the game, make sure these DLLs are in the same folder as the exe:
 - `glfw3.dll`
 
 ### Linux
-Probably just:
+
+#### Arch
+Install dependencies:
+
+```bash
+sudo pacman -S glew glfw
+```
+
+Then build and run:
 ```bash
 make
 ./rubydung
 ```
-It may not compile, I'll need to check for myself first.
+
+> Tested on Arch Linux — other distros may need different package names.
 
 ---
 

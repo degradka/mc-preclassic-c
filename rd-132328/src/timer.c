@@ -1,10 +1,15 @@
 // timer.c — fixed-timestep timer (ticks & partialTicks)
 
-#include "timer.h"
-#include <stdlib.h>
+#define _POSIX_C_SOURCE 200809L
 
-#ifdef _WIN32
+#include "timer.h"
+
+#if defined(_WIN32)
+  #define WIN32_LEAN_AND_MEAN
   #include <windows.h>
+#elif defined(__APPLE__)
+  #include <mach/mach_time.h>
+  #include <time.h>
 #else
   #include <time.h>
 #endif
@@ -23,29 +28,46 @@ void Timer_init(Timer* timer, float ticksPerSecond) {
     timer->lastTime       = getCurrentTimeInNanoseconds();
 }
 
-long long getCurrentTimeInNanoseconds() {
-#ifdef _WIN32
-    LARGE_INTEGER freq, now;
-    QueryPerformanceFrequency(&freq);
+long long getCurrentTimeInNanoseconds(void) {
+#if defined(_WIN32)
+    static LARGE_INTEGER freq = {0};
+    LARGE_INTEGER now;
+    if (freq.QuadPart == 0) QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&now);
-    return now.QuadPart * NS_PER_SECOND / freq.QuadPart;
+    return (long long)((now.QuadPart * 1000000000LL) / freq.QuadPart);
+
+#elif defined(__APPLE__)
+    static mach_timebase_info_data_t tb = {0};
+    if (tb.denom == 0) mach_timebase_info(&tb);
+    uint64_t t = mach_absolute_time();
+    return (long long)(t * (uint64_t)tb.numer / (uint64_t)tb.denom);
+
 #else
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    return now.tv_sec * NS_PER_SECOND + now.tv_nsec;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000000000LL + (long long)ts.tv_nsec;
 #endif
 }
 
-long long currentTimeMillis() {
-#ifdef _WIN32
-    LARGE_INTEGER freq, now;
-    QueryPerformanceFrequency(&freq);
+long long currentTimeMillis(void) {
+#if defined(_WIN32)
+    static LARGE_INTEGER freq = {0};
+    LARGE_INTEGER now;
+    if (freq.QuadPart == 0) QueryPerformanceFrequency(&freq);
     QueryPerformanceCounter(&now);
-    return (now.QuadPart * 1000) / freq.QuadPart;
+    return (long long)((now.QuadPart * 1000LL) / freq.QuadPart);
+
+#elif defined(__APPLE__)
+    static mach_timebase_info_data_t tb = {0};
+    if (tb.denom == 0) mach_timebase_info(&tb);
+    uint64_t t = mach_absolute_time();
+    uint64_t ns = t * (uint64_t)tb.numer / (uint64_t)tb.denom;
+    return (long long)(ns / 1000000ULL);
+
 #else
-    struct timespec tp;
-    clock_gettime(CLOCK_MONOTONIC, &tp);
-    return tp.tv_sec * 1000 + tp.tv_nsec / 1000000;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000LL + (long long)(ts.tv_nsec / 1000000L);
 #endif
 }
 
