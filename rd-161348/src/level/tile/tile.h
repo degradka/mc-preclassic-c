@@ -13,9 +13,15 @@ typedef struct Tile Tile;
 struct Tile {
     int id;
     int textureId;
+
     int  (*getTexture)(const Tile* self, int face);
     void (*render)(const Tile* self, Tessellator* t, const Level* lvl, int layer, int x, int y, int z);
     void (*onTick)(const Tile* self, Level* lvl, int x, int y, int z);
+
+    int  (*isSolid)(const Tile* self);
+    int  (*blocksLight)(const Tile* self);
+    // return 1 and fill *out on success; return 0 if no collision box
+    int  (*getAABB)(const Tile* self, int x, int y, int z, AABB* out);
 };
 
 // Global registry, index by tile id (0..255)
@@ -27,6 +33,7 @@ extern Tile TILE_GRASS;     // id=2 (custom per face)
 extern Tile TILE_DIRT;      // id=3
 extern Tile TILE_STONEBRICK;// id=4
 extern Tile TILE_WOOD;      // id=5
+extern Tile TILE_BUSH;      // id=6
 
 void Tile_registerAll(void);
 

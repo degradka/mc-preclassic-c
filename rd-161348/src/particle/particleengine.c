@@ -45,15 +45,21 @@ void ParticleEngine_render(ParticleEngine* pe, const Player* player, float parti
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, pe->texture);
 
-    // Ensure stale color arrays don't override glColor
     glDisableClientState(GL_COLOR_ARRAY);
-
     GLboolean cullWasEnabled = glIsEnabled(GL_CULL_FACE);
     if (cullWasEnabled) glDisable(GL_CULL_FACE);
 
-    float yawRad = player->e.yRotation * (float)M_PI / 180.0f;
-    float cameraX = cosf(yawRad);
-    float cameraZ = sinf(yawRad);
+    // --- NEW camera vectors (match Java commit) ---
+    float yawRad   = player->e.yRotation * (float)M_PI / 180.0f;
+    float pitchRad = player->e.xRotation * (float)M_PI / 180.0f;
+
+    float cameraX = -cosf(yawRad);
+    float cameraY =  cosf(pitchRad);
+    float cameraZ = -sinf(yawRad);
+
+    float cameraXWithY = -cameraZ * sinf(pitchRad);
+    float cameraZWithY =  cameraX * sinf(pitchRad);
+    // ----------------------------------------------
 
     glColor4f(0.8f, 0.8f, 0.8f, 1.0f);
 
@@ -62,8 +68,10 @@ void ParticleEngine_render(ParticleEngine* pe, const Player* player, float parti
         Particle* p = &pe->items[i];
         int lit = Entity_isLit(&p->base) ? 1 : 0;
         int inLayer = (layer == 1) ? 1 : 0;
-        if ( (lit ^ inLayer) == 1 ) {
-            Particle_render(p, &pe->tess, partialTicks, -cameraX, 1.0f, -cameraZ);
+        if ((lit ^ inLayer) == 1) {
+            Particle_render(p, &pe->tess, partialTicks,
+                            cameraX, cameraY, cameraZ,
+                            cameraXWithY, cameraZWithY);
         }
     }
     Tessellator_flush(&pe->tess);

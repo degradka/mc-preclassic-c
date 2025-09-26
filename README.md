@@ -21,7 +21,7 @@ I kept file names and code organization close to the original repo:
 
 ## Versions covered
 
-### rd-132211 (base)
+### rd-132211
 - Break and place tiles  
 - White flashing overlay on the block you’re aiming at  
 - Save the level by pressing **Enter**  

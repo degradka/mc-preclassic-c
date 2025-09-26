@@ -101,7 +101,9 @@ void Level_generateMap(Level* level) {
 }
 
 bool Level_isLightBlocker(const Level* level, int x, int y, int z) {
-    return Level_isSolidTile(level, x, y, z);
+    int id = Level_getTile(level, x, y, z);
+    const Tile* t = (id >= 0 && id < 256) ? gTiles[id] : NULL;
+    return (t && t->blocksLight(t)) ? true : false;
 }
 
 bool Level_isTile(const Level* level, int x, int y, int z) {
@@ -109,7 +111,9 @@ bool Level_isTile(const Level* level, int x, int y, int z) {
 }
 
 bool Level_isSolidTile(const Level* level, int x, int y, int z) {
-    return Level_isTile(level, x, y, z);
+    int id = Level_getTile(level, x, y, z);
+    const Tile* t = (id >= 0 && id < 256) ? gTiles[id] : NULL;
+    return (t && t->isSolid(t)) ? true : false;
 }
 
 void Level_destroy(Level* level) {
@@ -191,6 +195,11 @@ int Level_getTile(const Level* level, int x, int y, int z) {
         return 0;
     int index = (y * level->height + z) * level->width + x;
     return level->blocks[index];
+}
+
+AABB Level_getTilePickAABB(const Level* level, int x, int y, int z) {
+    (void)level;
+    return AABB_create(x, y, z, x+1, y+1, z+1);
 }
 
 bool Level_isLit(const Level* level, int x, int y, int z) {

@@ -5,6 +5,14 @@
 #include "../../particle/particle.h"
 #include <string.h>
 
+static int Tile_default_isSolid(const Tile* self)    { (void)self; return 1; }
+static int Tile_default_blocksLight(const Tile* self){ (void)self; return 1; }
+static int Tile_default_getAABB(const Tile* self, int x,int y,int z, AABB* out) {
+    (void)self;
+    if (out) *out = AABB_create(x, y, z, x+1, y+1, z+1);
+    return 1; // has AABB
+}
+
 static int Tile_default_getTexture(const Tile* self, int face) {
     (void)face;
     return self->textureId;
@@ -108,25 +116,25 @@ static void registerTile(Tile* t, int id, int tex, int (*getTex)(const Tile*,int
     t->getTexture = getTex ? getTex : Tile_default_getTexture;
     t->render = Tile_render_shared;
     t->onTick = NULL;
+    t->isSolid     = Tile_default_isSolid;
+    t->blocksLight = Tile_default_blocksLight;
+    t->getAABB     = Tile_default_getAABB;
+
     gTiles[id] = t;
 }
 
-/* Rock (single texture) */
 Tile TILE_ROCK;
-/* Dirt (single texture) */
 Tile TILE_DIRT;
-/* Stone brick (single texture) */
 Tile TILE_STONEBRICK;
-/* Wood (single texture) */
 Tile TILE_WOOD;
+Tile TILE_GRASS;
+Tile TILE_BUSH;
 
 /* Grass (per-face textures) — face map: top=0, bottom=2, sides=3 */
 static int Grass_getTexture(const Tile* self, int face) {
     (void)self;
     return (face == 1) ? 0 : (face == 0) ? 2 : 3;
 }
-
-Tile TILE_GRASS;
 
 static void Grass_onTick(const Tile* self, Level* lvl, int x, int y, int z) {
     (void)self;
@@ -146,16 +154,76 @@ static void Grass_onTick(const Tile* self, Level* lvl, int x, int y, int z) {
     }
 }
 
+static int Bush_isSolid(const Tile* self)     { (void)self; return 0; }
+static int Bush_blocksLight(const Tile* self) { (void)self; return 0; }
+static int Bush_getAABB(const Tile* self, int x,int y,int z, AABB* out){
+    (void)self; (void)x; (void)y; (void)z; (void)out;
+    return 0; // no collision box
+}
+
+static void Bush_render(const Tile* self, Tessellator* t, const Level* lvl,
+                        int layer, int x, int y, int z)
+{
+    // Visibility rule: render in exactly one of the two layers (lit xor shadow),
+    // like the rest of tiles. Use the same lit test the shared renderer uses.
+    const int lit = (x < 0 || y < 0 || z < 0 || x >= lvl->width || y >= lvl->depth || z >= lvl->height)
+                    ? 1
+                    : (y >= lvl->lightDepths[x + z * lvl->width]);
+    if ( ((lit ^ (layer == 1)) == 0) ) return;
+
+    // Bush uses atlas slot 15 in this commit
+    float u0, v0, u1, v1;
+    calcUV(self->textureId, &u0,&v0,&u1,&v1);
+
+    // Slight shading like leaves; you can also just use 1,1,1
+    const float shade = 0.8f;
+    Tessellator_color(t, shade, shade, shade);
+
+    const float X0 = (float)x, X1 = (float)x + 1.0f;
+    const float Y0 = (float)y, Y1 = (float)y + 1.0f;
+    const float Z0 = (float)z, Z1 = (float)z + 1.0f;
+
+    // We draw both sides of each diagonal plane (so it's visible with culling on).
+    // Plane A: from (x,*,z) to (x+1,*,z+1)  (diagonal ↘)
+    //   front
+    Tessellator_vertexUV(t, X0, Y1, Z0, u0, v0);
+    Tessellator_vertexUV(t, X1, Y1, Z1, u1, v0);
+    Tessellator_vertexUV(t, X1, Y0, Z1, u1, v1);
+    Tessellator_vertexUV(t, X0, Y0, Z0, u0, v1);
+    //   back
+    Tessellator_vertexUV(t, X0, Y1, Z0, u0, v0);
+    Tessellator_vertexUV(t, X0, Y0, Z0, u0, v1);
+    Tessellator_vertexUV(t, X1, Y0, Z1, u1, v1);
+    Tessellator_vertexUV(t, X1, Y1, Z1, u1, v0);
+
+    // Plane B: from (x+1,*,z) to (x,*,z+1)   (diagonal ↙)
+    //   front
+    Tessellator_vertexUV(t, X1, Y1, Z0, u0, v0);
+    Tessellator_vertexUV(t, X0, Y1, Z1, u1, v0);
+    Tessellator_vertexUV(t, X0, Y0, Z1, u1, v1);
+    Tessellator_vertexUV(t, X1, Y0, Z0, u0, v1);
+    //   back
+    Tessellator_vertexUV(t, X1, Y1, Z0, u0, v0);
+    Tessellator_vertexUV(t, X1, Y0, Z0, u0, v1);
+    Tessellator_vertexUV(t, X0, Y0, Z1, u1, v1);
+    Tessellator_vertexUV(t, X0, Y1, Z1, u1, v0);
+}
 
 void Tile_registerAll(void) {
     memset((void*)gTiles, 0, sizeof(gTiles));
-    registerTile(&TILE_ROCK,       1,  1, NULL);
-    registerTile(&TILE_GRASS,      2,  3, Grass_getTexture);
-    registerTile(&TILE_DIRT,       3,  2, NULL);
-    registerTile(&TILE_STONEBRICK, 4, 16, NULL);
-    registerTile(&TILE_WOOD,       5,  4, NULL);
+    registerTile(&TILE_ROCK,       1,  1,  NULL);
+    registerTile(&TILE_GRASS,      2,  3,  Grass_getTexture);
+    registerTile(&TILE_DIRT,       3,  2,  NULL);
+    registerTile(&TILE_STONEBRICK, 4, 16,  NULL);
+    registerTile(&TILE_WOOD,       5,  4,  NULL);
+    registerTile(&TILE_BUSH,       6, 15,  NULL);
 
     TILE_GRASS.onTick = Grass_onTick;
+
+    TILE_BUSH.isSolid     = Bush_isSolid;
+    TILE_BUSH.blocksLight = Bush_blocksLight;
+    TILE_BUSH.getAABB     = Bush_getAABB;
+    TILE_BUSH.render      = Bush_render;
 }
 
 /* ---------- untextured single-face helper (for hit highlight) ---------- */

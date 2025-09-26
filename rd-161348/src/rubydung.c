@@ -40,6 +40,7 @@ static int prevRight = GLFW_RELEASE;
 static int prevEnter = GLFW_RELEASE;
 static int prevNum1 = GLFW_RELEASE, prevNum2 = GLFW_RELEASE;
 static int prevNum3 = GLFW_RELEASE, prevNum4 = GLFW_RELEASE;
+static int prevNum6 = GLFW_RELEASE;
 static int prevG    = GLFW_RELEASE;
 
 static int texTerrain = 0;
@@ -132,6 +133,9 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    glEnable(GL_ALPHA_TEST);
+    glAlphaFunc(GL_GREATER, 0.5f);
+
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPos(window, 0, 0);
     glfwSetKeyCallback(window, keyCallback);
@@ -192,29 +196,35 @@ static void setupCamera(Player* p, float t) {
     moveCameraToPlayer(p, t);
 }
 
-static void setupOrthoCamera(void) {
-    int fbw, fbh; glfwGetFramebufferSize(window, &fbw, &fbh);
+static void drawGui(float partialTicks) {
+    (void)partialTicks;
+
+    // Clear depth so HUD draws on top
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    // --- setup HUD camera to a fixed 240px logical height ---
+    int fbw, fbh; 
+    glfwGetFramebufferSize(window, &fbw, &fbh);
+
+    int screenWidth  = fbw * 240 / fbh;  // integer scale
+    int screenHeight = 240;              // fixed logical height
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    glOrtho(0.0, fbw, fbh, 0.0, 100.0, 300.0);
+    glOrtho(0.0, screenWidth, screenHeight, 0.0, 100.0, 300.0);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
     glTranslatef(0.0f, 0.0f, -200.0f);
-}
 
-static void drawGui(float partialTicks) {
-    (void)partialTicks;
-    glClear(GL_DEPTH_BUFFER_BIT);
-    setupOrthoCamera();
-
-    int fbw, fbh; glfwGetFramebufferSize(window, &fbw, &fbh);
-
+    // --- held block preview (top-right), 16x16 logical size ---
     glPushMatrix();
-    glTranslated(fbw - 48, 48.0, 0.0);
-    glScalef(48.0f, 48.0f, 48.0f);
+    glTranslated((double)screenWidth - 16.0, 16.0, 0.0);
+    glScalef(16.0f, 16.0f, 16.0f);
     glRotatef(30.0f, 1, 0, 0);
     glRotatef(45.0f, 0, 1, 0);
-    glTranslatef(1.5f, -0.5f, -0.5f);
+    glTranslatef(-1.5f, 0.5f, -0.5f);
+    glScalef(-1.0f, -1.0f, 1.0f);
 
     glBindTexture(GL_TEXTURE_2D, texTerrain);
     glEnable(GL_TEXTURE_2D);
@@ -222,7 +232,6 @@ static void drawGui(float partialTicks) {
     Tessellator_init(&hudTess);
     const Tile* hand = gTiles[selectedTileId];
     if (hand && hand->render) {
-        // render one block at (-2,0,0)
         hand->render(hand, &hudTess, &level, 0, -2, 0, 0);
     }
     Tessellator_flush(&hudTess);
@@ -230,20 +239,21 @@ static void drawGui(float partialTicks) {
     glDisable(GL_TEXTURE_2D);
     glPopMatrix();
 
-    // Crosshair
-    int cx = fbw / 2, cy = fbh / 2;
-    glColor4f(1,1,1,1);
+    int cx = screenWidth / 2;
+    int cy = screenHeight / 2;
+
+    glColor4f(1, 1, 1, 1);
     Tessellator_init(&hudTess);
-    // vertical
-    Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy - 8), 0.0f);
-    Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy - 8), 0.0f);
-    Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy + 9), 0.0f);
-    Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy + 9), 0.0f);
-    // horizontal
-    Tessellator_vertex(&hudTess, (float)(cx + 9), (float)(cy + 0), 0.0f);
-    Tessellator_vertex(&hudTess, (float)(cx - 8), (float)(cy + 0), 0.0f);
-    Tessellator_vertex(&hudTess, (float)(cx - 8), (float)(cy + 1), 0.0f);
-    Tessellator_vertex(&hudTess, (float)(cx + 9), (float)(cy + 1), 0.0f);
+    // vertical (height ~9)
+    Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy - 4), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy - 4), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 0), (float)(cy + 5), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 1), (float)(cy + 5), 0.0f);
+    // horizontal (width ~9)
+    Tessellator_vertex(&hudTess, (float)(cx + 5), (float)(cy + 0), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx - 4), (float)(cy + 0), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx - 4), (float)(cy + 1), 0.0f);
+    Tessellator_vertex(&hudTess, (float)(cx + 5), (float)(cy + 1), 0.0f);
     Tessellator_flush(&hudTess);
 }
 
@@ -287,7 +297,9 @@ static int raycast_block(const Level* lvl,
         if (x < 0 || y < 0 || z < 0 || x >= lvl->width || y >= lvl->depth || z >= lvl->height)
             return 0;
 
-        if (Level_isSolidTile(lvl, x, y, z)) {
+            // Any non-air tile is pickable (bushes, etc.), even if not solid.
+        int id = Level_getTile(lvl, x, y, z);
+        if (id != 0) {
             if (out) hitresult_create(out, x, y, z, 0, (face < 0 ? 0 : face));
             return 1;
         }
@@ -357,11 +369,13 @@ static void handleGameplayKeys(GLFWwindow* w) {
     int n2 = glfwGetKey(w, GLFW_KEY_2);
     int n3 = glfwGetKey(w, GLFW_KEY_3);
     int n4 = glfwGetKey(w, GLFW_KEY_4);
+    int n6 = glfwGetKey(w, GLFW_KEY_6);
     if (n1 == GLFW_PRESS && prevNum1 == GLFW_RELEASE) selectedTileId = 1;  // rock
     if (n2 == GLFW_PRESS && prevNum2 == GLFW_RELEASE) selectedTileId = 3;  // dirt
     if (n3 == GLFW_PRESS && prevNum3 == GLFW_RELEASE) selectedTileId = 4;  // stone brick
     if (n4 == GLFW_PRESS && prevNum4 == GLFW_RELEASE) selectedTileId = 5;  // wood
-    prevNum1 = n1; prevNum2 = n2; prevNum3 = n3; prevNum4 = n4;
+    if (n6 == GLFW_PRESS && prevNum6 == GLFW_RELEASE) selectedTileId = 6;  // bush
+    prevNum1 = n1; prevNum2 = n2; prevNum3 = n3; prevNum4 = n4; prevNum6 = n6;
 
     // G = spawn zombie at player
     int g = glfwGetKey(w, GLFW_KEY_G);
@@ -460,7 +474,12 @@ static void render(Level* lvl, LevelRenderer* lr, Player* p, GLFWwindow* w, floa
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_FOG);
 
-    if (!isHitNull) LevelRenderer_renderHit(lr, &hitResult);
+    if (!isHitNull) {
+        GLboolean wasAlpha = glIsEnabled(GL_ALPHA_TEST);
+        if (wasAlpha) glDisable(GL_ALPHA_TEST);
+        LevelRenderer_renderHit(&levelRenderer, &hitResult);
+        if (wasAlpha) glEnable(GL_ALPHA_TEST);
+    }
 
     drawGui(t);
 

@@ -47,6 +47,8 @@ void  Level_save(const Level* level);
 bool  level_setTile(Level* level, int x, int y, int z, int type);
 int   Level_getTile(const Level* level, int x, int y, int z);
 
+AABB Level_getTilePickAABB(const Level* level, int x, int y, int z);
+
 bool  Level_isLit(const Level* level, int x, int y, int z);
 
 void  Level_onTick(Level* level);
