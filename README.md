@@ -56,7 +56,11 @@ I kept file names and code organization close to the original repo:
 ### rd-160052
 - Add tile destroy particles
 
-### rd-161348 (in progress)
+### rd-161348
+- Added bush tile
+- Changed HUD scale
+- Flipped tile preview
+- Rotate particles to the y camera position
 
 ---
 
