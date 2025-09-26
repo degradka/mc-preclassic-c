@@ -14,8 +14,8 @@ This is me being insane enough to rewrite the very first public Minecraft versio
 Why? Because I can.  
 And because the original was Java, and I wanted to see how far I could push a C port.  
 
-I kept file names and code organization close to the original repo:  
-[thecodeofnotch/rd-132211](https://github.com/thecodeofnotch/rd-132211).
+I kept file names and code organization close to the original repos:  
+[GitHub: thecodeofnotch](https://github.com/thecodeofnotch)
 
 ---
 
@@ -65,11 +65,31 @@ I kept file names and code organization close to the original repo:
 ---
 
 ## Building
-Tested on **Windows**, works fine.  
 
 ### Windows
-You’ll need MinGW (or similar). Then:  
+
+#### Install MSYS2
+Download and install from [msys2.org](https://www.msys2.org/).
+
+#### Open the right shell
+Launch **“MSYS2 MinGW x64”** (the icon says *MINGW64*).  
+:warning: Do **not** use the plain “MSYS2 MSYS” shell.
+
+#### Update and install toolchain + libraries
 ```bash
+pacman -Syu                    # if it asks, close the window and reopen MINGW64, then run again
+pacman -S --needed \
+  mingw-w64-x86_64-toolchain \
+  mingw-w64-x86_64-glfw \
+  mingw-w64-x86_64-glew \
+  mingw-w64-x86_64-zlib \
+  make
+```
+
+#### Build
+```bash
+git clone https://github.com/degradka/mc-preclassic-c.git
+cd mc-preclassic-c/rd-[version]/src/
 make
 ```
 
@@ -79,28 +99,39 @@ To run the game, make sure these DLLs are in the same folder as the exe:
 - `glew32.dll`
 - `glfw3.dll`
 
-### Linux
+Don't forget that `resources/` folder should also be in the same folder.
 
-#### Arch
-Install dependencies:
+### Linux
+> Tested on Arch Linux — other distros may need different package names.
+
+#### Install dependencies
 
 ```bash
 sudo pacman -S glew glfw
 ```
 
-Then build and run:
+#### Build
 ```bash
+git clone https://github.com/degradka/mc-preclassic-c.git
+cd mc-preclassic-c/rd-[version]/src/
 make
-./rubydung
 ```
 
-> Tested on Arch Linux — other distros may need different package names.
+Don't forget that `resources/` folder should also be in the same folder.
 
 ---
 
 ## References
-- [Wiki: Java Edition pre-Classic rd-132211](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-132211)  
-- [The Code of Notch repo](https://github.com/thecodeofnotch/rd-132211)  
+- [Wiki: Java Edition pre-Classic rd-132211](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-132211)
+- [Wiki: Java Edition pre-Classic rd-132328](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-132328)
+- [Wiki: Java Edition pre-Classic rd-20090515](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-20090515)
+- [Wiki: Java Edition pre-Classic rd-160052](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-160052)
+- [Wiki: Java Edition pre-Classic rd-161348](https://minecraft.fandom.com/wiki/Java_Edition_pre-Classic_rd-161348)
+- [GitHub: The Code of Notch rd-132211](https://github.com/thecodeofnotch/rd-132211)
+- [GitHub: The Code of Notch rd-132328](https://github.com/thecodeofnotch/rd-132328)
+- [GitHub: The Code of Notch rd-20090515](https://github.com/thecodeofnotch/rd-20090515)
+- [GitHub: The Code of Notch rd-160052](https://github.com/thecodeofnotch/rd-160052)
+- [GitHub: The Code of Notch rd-161348](https://github.com/thecodeofnotch/rd-161348)
 
 ---
 
