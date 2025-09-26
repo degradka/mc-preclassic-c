@@ -9,7 +9,7 @@
 
 ## What the hell is this?
 This is me being insane enough to rewrite the very first public Minecraft versions  
-**rd-132211**, **rd-132328** released May 2009, in plain C.
+**rd-132211**, **rd-132328**, **rd-20090515**, **rd-160052**, **rd-161348** released 2009, in plain C.
 
 Why? Because I can.  
 And because the original was Java, and I wanted to see how far I could push a C port.  
