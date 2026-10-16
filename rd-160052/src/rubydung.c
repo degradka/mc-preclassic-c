@@ -111,7 +111,7 @@ static int init(Level* lvl, LevelRenderer* lr, Player* p) {
     glfwSwapInterval(0); // uncapped
 
     GLenum err = glewInit();
-    if (err != GLEW_OK) {
+    if (err != GLEW_OK && err != GLEW_ERROR_NO_GLX_DISPLAY) {
         fprintf(stderr, "GLEW init failed: %s\n", glewGetErrorString(err));
         return 0;
     }
