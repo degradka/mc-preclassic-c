@@ -11,10 +11,13 @@
 This is me being insane enough to rewrite the very first public Minecraft versions  
 **rd-132211**, **rd-132328**, **rd-20090515**, **rd-160052**, **rd-161348** released 2009, in plain C.
 
+The continuation of this project covering **Minecraft Classic** (c0.0.11a → c0.30) is here:  
+**[mc-classic-c](https://github.com/degradka/mc-classic-c)**
+
 Why? Because I can.  
 And because the original was Java, and I wanted to see how far I could push a C port.  
 
-I kept file names and code organization close to the original repos:  
+I kept file names and code organization close to original source and this repo:  
 [GitHub: thecodeofnotch](https://github.com/thecodeofnotch)
 
 ---
